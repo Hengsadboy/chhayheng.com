@@ -4,7 +4,6 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import AmbientAudio from "@/components/AmbientAudio";
-import ContentLock from "@/components/ContentLock";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +35,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-[#04040d] text-slate-100 flex flex-col antialiased`} suppressHydrationWarning>
         <AnimatedBackground />
         <AmbientAudio />
-        <ContentLock />
+        {/* Anti-copy protection removed by user request */}
         <Navbar />
         <main className="flex-grow pt-20">
           {children}
