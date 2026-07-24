@@ -135,6 +135,10 @@ export default function Home() {
     setQrCodeUrl('');
     setSecondsLeft(180);
 
+    const finalAmount = appliedCoupon 
+      ? (selectedProduct.price * (1 - appliedCoupon.discount / 100)).toFixed(2)
+      : selectedProduct.price.toFixed(2);
+
     // 1. Animate sloshing tube setup progress
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
@@ -153,7 +157,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create',
-          amount: '0.01' // actual paid test amount
+          amount: finalAmount
         })
       });
 
