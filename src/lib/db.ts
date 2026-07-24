@@ -45,6 +45,13 @@ export interface Coupon {
   discountPercentage: number;
 }
 
+export interface Verification {
+  email: string;
+  code: string;
+  type: 'signup' | 'reset';
+  expiresAt: string;
+}
+
 const DB_DIR = path.join(process.cwd(), 'data');
 const PRODUCTS_FILE = path.join(DB_DIR, 'products.json');
 const ORDERS_FILE = path.join(DB_DIR, 'orders.json');
@@ -52,6 +59,7 @@ const USERS_FILE = path.join(DB_DIR, 'users.json');
 const CATEGORIES_FILE = path.join(DB_DIR, 'categories.json');
 const SETTINGS_FILE = path.join(DB_DIR, 'settings.json');
 const COUPONS_FILE = path.join(DB_DIR, 'coupons.json');
+const VERIFICATIONS_FILE = path.join(DB_DIR, 'verifications.json');
 
 // Ensure database files exist
 function initDB() {
@@ -190,6 +198,10 @@ function initDB() {
   if (!fs.existsSync(COUPONS_FILE)) {
     fs.writeFileSync(COUPONS_FILE, JSON.stringify([], null, 2), 'utf-8');
   }
+
+  if (!fs.existsSync(VERIFICATIONS_FILE)) {
+    fs.writeFileSync(VERIFICATIONS_FILE, JSON.stringify([], null, 2), 'utf-8');
+  }
 }
 
 // Read & Write Helpers
@@ -256,6 +268,17 @@ export function getCoupons(): Coupon[] {
 export function saveCoupons(coupons: Coupon[]): void {
   initDB();
   fs.writeFileSync(COUPONS_FILE, JSON.stringify(coupons, null, 2), 'utf-8');
+}
+
+export function getVerifications(): Verification[] {
+  initDB();
+  const data = fs.readFileSync(VERIFICATIONS_FILE, 'utf-8');
+  return JSON.parse(data);
+}
+
+export function saveVerifications(verifications: Verification[]): void {
+  initDB();
+  fs.writeFileSync(VERIFICATIONS_FILE, JSON.stringify(verifications, null, 2), 'utf-8');
 }
 
 // Authentication Config

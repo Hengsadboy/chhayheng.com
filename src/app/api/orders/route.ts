@@ -61,6 +61,14 @@ export async function POST(request: Request) {
     orders.push(newOrder);
     saveOrders(orders);
 
+    // Send order confirmation email asynchronously
+    try {
+      const { sendOrderNotificationEmail } = await import('@/lib/email');
+      await sendOrderNotificationEmail(customerEmail, newOrder.id, productName, price);
+    } catch (e) {
+      console.error('Failed to send order email:', e);
+    }
+
     return NextResponse.json(newOrder, { status: 201 });
   } catch (error) {
     console.error('Order creation error:', error);
