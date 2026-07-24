@@ -46,12 +46,19 @@ export const sendPasswordResetEmail = async (to: string, code: string) => {
   try { await transporter.sendMail(mailOptions); } catch (e) { console.error('SMTP Error:', e); }
 };
 
-export const sendOrderNotificationEmail = async (to: string, orderId: string, productName: string, price: number) => {
+export const sendOrderNotificationEmail = async (to: string, orderId: string, productName: string, price: number, deliverables?: string) => {
+  const deliverablesHtml = deliverables ? `
+    <div style="margin-top: 20px; padding: 15px; border-left: 4px solid #00d2ff; background: #eef2ff;">
+      <h3 style="margin-top: 0; color: #333;">Your Account/Link Details:</h3>
+      <p style="white-space: pre-wrap; word-break: break-all; font-family: monospace; color: #111;">${deliverables}</p>
+    </div>
+  ` : '';
+
   const mailOptions = {
     from: '"Chhayheng Store" <noreply@chhayheng.online>',
     to,
     subject: `Order Confirmation: ${productName}`,
-    text: `Thank you for your purchase!\nOrder ID: ${orderId}\nProduct: ${productName}\nAmount Paid: $${price}\n\nYou can track the status of your order in your Customer Cabinet on the website.`,
+    text: `Thank you for your purchase!\nOrder ID: ${orderId}\nProduct: ${productName}\nAmount Paid: $${price}\n\n${deliverables ? 'Your Account/Link Details:\n' + deliverables + '\n\n' : ''}You can track the status of your order in your Customer Cabinet on the website.`,
     html: `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; line-height: 1.6;">
         <h2 style="color: #00d2ff;">Thank you for your purchase!</h2>
@@ -61,6 +68,7 @@ export const sendOrderNotificationEmail = async (to: string, orderId: string, pr
           <p><strong>Product:</strong> ${productName}</p>
           <p><strong>Amount Paid:</strong> $${price}</p>
         </div>
+        ${deliverablesHtml}
         <p>You can track the status of your order in your <strong>Customer Cabinet</strong> on the website.</p>
       </div>
     `
