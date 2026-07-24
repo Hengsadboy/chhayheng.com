@@ -43,14 +43,14 @@ export default function Navbar() {
   };
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#04040d]/85 backdrop-blur-md border-b border-[#1e1e38] py-4' : 'bg-transparent py-6'}`}>
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-        <Link href="/" className="flex items-center space-x-2 group">
-          <div className="p-2 bg-gradient-to-tr from-neon-cyan to-neon-purple rounded-lg glow-purple transition-all duration-300 group-hover:scale-105">
-            <Terminal className="w-5 h-5 text-[#04040d]" />
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#04040d]/85 backdrop-blur-md border-b border-[#1e1e38] py-3 md:py-4' : 'bg-transparent py-4 md:py-6'}`}>
+      <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between">
+        <Link href="/" className="flex items-center space-x-2 group flex-shrink-0">
+          <div className="p-1.5 md:p-2 bg-gradient-to-tr from-neon-cyan to-neon-purple rounded-lg glow-purple transition-all duration-300 group-hover:scale-105 hidden sm:block">
+            <Terminal className="w-4 h-4 md:w-5 md:h-5 text-[#04040d]" />
           </div>
-          <span className="text-xl font-bold tracking-wider text-slate-100 group-hover:text-neon-cyan transition-colors">
-            Chhayheng<span className="text-gradient-cyan-purple font-black">.online</span>
+          <span className="text-base sm:text-lg md:text-xl font-bold tracking-wide md:tracking-wider text-slate-100 group-hover:text-neon-cyan transition-colors truncate">
+            Chhayheng<span className="text-gradient-cyan-purple font-black hidden xs:inline">.online</span>
           </span>
         </Link>
 
@@ -69,33 +69,33 @@ export default function Navbar() {
           </a>
         </div>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 md:space-x-4 flex-shrink-0">
           <a
             href="https://t.me/chhayhengs"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-md bg-slate-950 border border-[#1e1e38] hover:border-[#0088cc]/50 text-slate-400 hover:text-[#0088cc] transition-all flex items-center justify-center glow-cyan"
+            className="p-1.5 md:p-2 rounded-md bg-slate-950 border border-[#1e1e38] hover:border-[#0088cc]/50 text-slate-400 hover:text-[#0088cc] transition-all flex items-center justify-center glow-cyan"
             title="Contact Telegram: @chhayhengs"
           >
-            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 md:w-4 md:h-4 fill-current" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.11.02-1.93 1.23-5.46 3.62-.51.35-.98.53-1.39.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.46-.42-1.4-.88.03-.24.36-.49.99-.75 3.86-1.68 6.43-2.78 7.72-3.3 3.67-1.48 4.43-1.74 4.93-1.75.11 0 .36.03.52.16.14.11.18.26.2.37.02.12.02.26.01.37z" />
             </svg>
           </a>
 
           {session ? (
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 md:space-x-4">
               <Link
                 href={session.role === 'admin' ? '/admin' : '/customer'}
-                className="text-xs font-semibold py-1.5 px-3 rounded-md glassmorphism border border-[#1e1e38] text-slate-300 hover:text-neon-cyan hover:glow-cyan transition-all flex items-center space-x-1"
+                className="text-[10px] md:text-xs font-semibold py-1 md:py-1.5 px-2 md:px-3 rounded-md glassmorphism border border-[#1e1e38] text-slate-300 hover:text-neon-cyan hover:glow-cyan transition-all flex items-center space-x-1"
               >
                 {session.role === 'admin' ? (
                   <>
-                    <Shield className="w-3.5 h-3.5 text-neon-purple" />
-                    <span>Admin Panel</span>
+                    <Shield className="w-3 h-3 md:w-3.5 md:h-3.5 text-neon-purple hidden sm:block" />
+                    <span>Admin</span>
                   </>
                 ) : (
                   <>
-                    <User className="w-3.5 h-3.5 text-neon-cyan" />
+                    <User className="w-3 h-3 md:w-3.5 md:h-3.5 text-neon-cyan hidden sm:block" />
                     <span>Dashboard</span>
                   </>
                 )}
