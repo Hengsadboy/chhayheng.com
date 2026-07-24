@@ -25,7 +25,7 @@ export const sendVerificationEmail = async (to: string, code: string) => {
       </div>
     `
   };
-  await transporter.sendMail(mailOptions);
+  try { await transporter.sendMail(mailOptions); } catch (e) { console.error('SMTP Error:', e); }
 };
 
 export const sendPasswordResetEmail = async (to: string, code: string) => {
@@ -43,7 +43,7 @@ export const sendPasswordResetEmail = async (to: string, code: string) => {
       </div>
     `
   };
-  await transporter.sendMail(mailOptions);
+  try { await transporter.sendMail(mailOptions); } catch (e) { console.error('SMTP Error:', e); }
 };
 
 export const sendOrderNotificationEmail = async (to: string, orderId: string, productName: string, price: number) => {
@@ -65,5 +65,5 @@ export const sendOrderNotificationEmail = async (to: string, orderId: string, pr
       </div>
     `
   };
-  await transporter.sendMail(mailOptions);
+  try { await transporter.sendMail(mailOptions); } catch (e) { console.error('SMTP Error:', e); }
 };
