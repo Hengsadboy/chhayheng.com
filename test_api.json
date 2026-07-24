@@ -1,0 +1,47 @@
+{
+  "step": "abapay_khqr_request_qr",
+  "qr_string": "00020101021230510016abaakhppxxx@abaa01151240205183115490208ABA Bank52045999530384054040.015802KH5912AN CHHAYHENG6003N/A625568510010PAYWAY@ABA0115437661-2070289502090411491430301199670013178490396130001131787495961300672100170013F1BF016411FDA6804PLIK63046389",
+  "expire_in": 1784904141,
+  "expire_in_sec": "180",
+  "download_qr": "https://pwapp.ababank.com/api/pw-app/v1/payment/gateway/download-qr?aba_data=Z1h2TGcyZkJjMWpsRmdhYWE2TWVNemhVUnEzSXVDSWpENVhsRUFQd0hBTWZpcUx3UGlzS0lsQzMrV3N6bXFXY2tiTFVWRnRVMFcyUVZwNjNKZ1M3MVJ6ZHFrQWpYYjQvdGowUVZrb2VQb00rSnVyWG0zOFhIRExUcmFLY0E2cVZka3BGZjh0c21Eajc2TytHVUVuMytvTTh3cTNBK1NpVXQ4SDZzaG92YUg4Y1l6YU9Xb1R6OHAwdDJLTnFTSExOSUR5SnUyV3FKaktCWTZZVmcyNEpiZ2ZGNEl1Y2RQeERkOFhrQUY1WWhZV3ZmMElLWmp3dm9yMkVTYkFoZVhvM1AvN0pacGZVT0dEc1g1RGYybXpQTmxya2lXVGpvb2pTVmlYNGIvbmxqZGp0eFZPUjFBUFRCTUd5YnlTbHF3aUdsbXZXY2dya2ZGSW0vemZNYVVjbm84ZWQ1bXRIT1J0OXE2dTV3UHUxRWFEUldiaUMwRG1wbWsvSExyN295MExEbVdpQ3NpNGJqbW15cHhCKzBXZ2pFdWUyMURqTUFURFhGbjMvcGFUQlFmUC95Um9lL3A2SVZVbDVWMHBmUlVlSkphV1hBU2VhMnlIMGxzZEJQc1lxanF0RHcwQXdLR005S3N2VU1saTdseVUrTE1ySk9aZVJtTTZpU2h4QzFEaVl5UWlUbDQ5amM3U1pvNmVvZzc1eithc0V3WGg2N04xaTVPcHVPcVVsVHNzPQ==",
+  "transaction_summary": {
+    "merchant": {
+      "company": "AN CHHAYHENG",
+      "company_logo": "",
+      "outlet_name": "AN CHHAYHENG",
+      "business_category": {
+        "name": "Other",
+        "name_km": "\u1795\u17d2\u179f\u17c1\u1784\u17d7",
+        "name_zh": "\u5176\u4ed6"
+      }
+    },
+    "order_details": {
+      "amount": "0.01",
+      "subtotal": "0.01",
+      "transaction_fee": 0,
+      "transaction_fee_enabled": 0,
+      "shipping": 0,
+      "vat_enabled": 0,
+      "vat": 0,
+      "vat_amount": 0,
+      "total": "0.01",
+      "max_amount_per_trxn": 100000,
+      "currency": "USD",
+      "description": "",
+      "image": "",
+      "status": "OPEN",
+      "created_by": " "
+    }
+  },
+  "payment_options": {
+    "abapay_khqr": {
+      "label": "ABA Pay & KHQR"
+    }
+  },
+  "status": {
+    "code": "00",
+    "message": "Success!",
+    "tran_id": "178490396152118"
+  },
+  "client_id": "1149143-437661-20702895"
+}
