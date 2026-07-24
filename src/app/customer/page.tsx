@@ -22,6 +22,8 @@ export default function CustomerDashboard() {
   const [session, setSession] = useState<{ email: string } | null>(null);
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
+  const [usernameInput, setUsernameInput] = useState('');
+  const [phoneInput, setPhoneInput] = useState('');
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'forgot-password'>('signin');
   const [codeInput, setCodeInput] = useState('');
   const [codeSent, setCodeSent] = useState(false);
@@ -124,7 +126,9 @@ export default function CustomerDashboard() {
           action,
           email: emailInput,
           password: passwordInput,
-          code: codeInput
+          code: codeInput,
+          username: usernameInput,
+          phone: phoneInput
         })
       });
       const data = await res.json();
@@ -200,6 +204,34 @@ export default function CustomerDashboard() {
           </div>
 
           <form onSubmit={authMode === 'signin' || codeSent ? handleAuthSubmit : handleRequestCode} className="space-y-4">
+            {authMode === 'signup' && (
+              <>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">Username</label>
+                  <input
+                    type="text"
+                    required
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value)}
+                    placeholder="Enter your username"
+                    disabled={codeSent}
+                    className="w-full bg-slate-950 border border-[#1e1e38] rounded-md px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-neon-cyan/50 transition-all disabled:opacity-50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">Phone Number</label>
+                  <input
+                    type="tel"
+                    required
+                    value={phoneInput}
+                    onChange={(e) => setPhoneInput(e.target.value)}
+                    placeholder="+855 12 345 678"
+                    disabled={codeSent}
+                    className="w-full bg-slate-950 border border-[#1e1e38] rounded-md px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-neon-cyan/50 transition-all disabled:opacity-50"
+                  />
+                </div>
+              </>
+            )}
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1.5">Email Address</label>
               <input

@@ -31,6 +31,8 @@ export interface User {
   email: string;
   passwordHash: string;
   role: 'customer' | 'admin';
+  username?: string;
+  phone?: string;
 }
 
 export interface Settings {
