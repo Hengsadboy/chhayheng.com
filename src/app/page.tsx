@@ -577,7 +577,7 @@ export default function Home() {
                             hasStock ? (
                               <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-950/50 text-emerald-400 border border-emerald-500/25">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                <span>In Stock: {stockCount} {stockCount === 1 ? 'Account' : 'Accounts'}</span>
+                                <span>{stockCount} left</span>
                               </span>
                             ) : (
                               <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[9px] font-extrabold bg-rose-950/50 text-rose-400 border border-rose-500/25">
