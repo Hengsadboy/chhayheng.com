@@ -50,7 +50,7 @@ export default function Navbar() {
             <Terminal className="w-5 h-5 text-[#04040d]" />
           </div>
           <span className="text-xl font-bold tracking-wider text-slate-100 group-hover:text-neon-cyan transition-colors">
-            Chhayheng<span className="text-gradient-cyan-purple font-black">.com</span>
+            Chhayheng<span className="text-gradient-cyan-purple font-black">.online</span>
           </span>
         </Link>
 
