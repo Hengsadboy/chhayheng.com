@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Chhayheng.com | Premium Software & Bot Shop",
+  title: "Chhayheng.online | Premium Software & Bot Shop",
   description: "Get custom Telegram bots, Discord bots, high-performance web applications, and security tools built by senior developers.",
 };
 
@@ -42,7 +42,7 @@ export default function RootLayout({
           {children}
         </main>
         <footer className="border-t border-[#1a1a36] bg-[#050510] py-8 text-center text-sm text-slate-500">
-          <p>© {new Date().getFullYear()} Chhayheng.com. All rights reserved. Crafting custom digital solutions.</p>
+          <p>© {new Date().getFullYear()} Chhayheng.online. All rights reserved. Crafting custom digital solutions.</p>
         </footer>
       </body>
     </html>
