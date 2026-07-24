@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { DatabaseSync } from 'node:sqlite';
 
 // Define DB Types
 export interface Product {
@@ -24,8 +23,8 @@ export interface Order {
   status: 'Pending' | 'In Progress' | 'Completed' | 'Cancelled';
   createdAt: string;
   updatedAt: string;
-  deliverables?: string;
-  requirements?: string;
+  deliverables?: string; // URL or text containing download links/credentials
+  requirements?: string; // Custom requirements supplied by client during checkout
 }
 
 export interface User {
@@ -58,37 +57,22 @@ export interface Verification {
 }
 
 const DB_DIR = path.join(process.cwd(), 'data');
-const DB_FILE = path.join(DB_DIR, 'database.db');
+const PRODUCTS_FILE = path.join(DB_DIR, 'products.json');
+const ORDERS_FILE = path.join(DB_DIR, 'orders.json');
+const USERS_FILE = path.join(DB_DIR, 'users.json');
+const CATEGORIES_FILE = path.join(DB_DIR, 'categories.json');
+const SETTINGS_FILE = path.join(DB_DIR, 'settings.json');
+const COUPONS_FILE = path.join(DB_DIR, 'coupons.json');
+const VERIFICATIONS_FILE = path.join(DB_DIR, 'verifications.json');
 
-// Ensure DB directory exists
-if (!fs.existsSync(DB_DIR)) {
-  fs.mkdirSync(DB_DIR, { recursive: true });
-}
+// Ensure database files exist
+function initDB() {
+  if (!fs.existsSync(DB_DIR)) {
+    fs.mkdirSync(DB_DIR, { recursive: true });
+  }
 
-// Connect to SQLite Database
-const db = new DatabaseSync(DB_FILE);
-db.exec('PRAGMA journal_mode = WAL;');
-db.exec('PRAGMA busy_timeout = 5000;');
-
-// Initialize Key-Value Table for Document Storage
-db.exec(`
-  CREATE TABLE IF NOT EXISTS json_store (
-    key TEXT PRIMARY KEY,
-    value TEXT
-  );
-`);
-
-let isInitialized = false;
-
-export function initDB() {
-  if (isInitialized) return;
-  
-  const countStmt = db.prepare('SELECT COUNT(*) as count FROM json_store');
-  const countRow = countStmt.get() as { count: number };
-  
-  if (countRow.count === 0) {
-    console.log('Migrating from JSON files to SQLite...');
-    
+  // Pre-populate with default products if empty
+  if (!fs.existsSync(PRODUCTS_FILE)) {
     const defaultProducts: Product[] = [
       {
         id: '1',
@@ -163,7 +147,11 @@ export function initDB() {
         ]
       }
     ];
+    fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(defaultProducts, null, 2), 'utf-8');
+  }
 
+  if (!fs.existsSync(ORDERS_FILE)) {
+    // Empty orders database initially
     const defaultOrders: Order[] = [
       {
         id: 'ord_101',
@@ -177,15 +165,22 @@ export function initDB() {
         deliverables: 'Download Link: https://github.com/chhayheng/ai-auditor/releases/download/v1.0.0/ai-auditor.zip\nLicense Key: HEX-9912-AUDIT-AI'
       }
     ];
+    fs.writeFileSync(ORDERS_FILE, JSON.stringify(defaultOrders, null, 2), 'utf-8');
+  }
 
+  if (!fs.existsSync(USERS_FILE)) {
+    // Add default admin user and empty customer database
     const defaultUsers: User[] = [
       {
         email: 'Chhayheng@gmail.com',
-        passwordHash: 'Heng@1188',
+        passwordHash: 'Heng@1188', // Simple plain text or simple hash check for this scope
         role: 'admin'
       }
     ];
+    fs.writeFileSync(USERS_FILE, JSON.stringify(defaultUsers, null, 2), 'utf-8');
+  }
 
+  if (!fs.existsSync(CATEGORIES_FILE)) {
     const defaultCategories: string[] = [
       'Telegram Bot',
       'Discord Bot',
@@ -193,76 +188,102 @@ export function initDB() {
       'Software Tool',
       'Digital Product'
     ];
-    
+    fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(defaultCategories, null, 2), 'utf-8');
+  }
+  if (!fs.existsSync(SETTINGS_FILE)) {
     const defaultSettings: Settings = {
       botToken: '8982796633:AAE8ZUg0F45RUG1MNEvk5WKmKL-X4KRLIXA',
       groupId: '-100000000',
       khqrLink: 'https://example.com/khqr.jpg'
     };
-
-    const collections = [
-      { key: 'categories', file: 'categories.json', defaultData: defaultCategories },
-      { key: 'settings', file: 'settings.json', defaultData: defaultSettings },
-      { key: 'users', file: 'users.json', defaultData: defaultUsers },
-      { key: 'products', file: 'products.json', defaultData: defaultProducts },
-      { key: 'orders', file: 'orders.json', defaultData: defaultOrders },
-      { key: 'coupons', file: 'coupons.json', defaultData: [] },
-      { key: 'verifications', file: 'verifications.json', defaultData: [] }
-    ];
-
-    const insertStmt = db.prepare('INSERT INTO json_store (key, value) VALUES (?, ?)');
-    
-    for (const col of collections) {
-      const filePath = path.join(DB_DIR, col.file);
-      let jsonData = JSON.stringify(col.defaultData);
-      
-      // Migrate exact data from old JSON if it exists!
-      if (fs.existsSync(filePath)) {
-        try {
-          jsonData = fs.readFileSync(filePath, 'utf-8');
-          console.log(`Migrated ${col.file} to SQLite`);
-        } catch(e) {}
-      }
-      insertStmt.run(col.key, jsonData);
-    }
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(defaultSettings, null, 2), 'utf-8');
   }
-  isInitialized = true;
+
+  if (!fs.existsSync(COUPONS_FILE)) {
+    fs.writeFileSync(COUPONS_FILE, JSON.stringify([], null, 2), 'utf-8');
+  }
+
+  if (!fs.existsSync(VERIFICATIONS_FILE)) {
+    fs.writeFileSync(VERIFICATIONS_FILE, JSON.stringify([], null, 2), 'utf-8');
+  }
 }
 
-function getValue<T>(key: string): T {
+// Read & Write Helpers
+export function getCategories(): string[] {
   initDB();
-  const stmt = db.prepare('SELECT value FROM json_store WHERE key = ?');
-  const row = stmt.get(key) as { value: string } | undefined;
-  if (!row) throw new Error(`Database key ${key} not found`);
-  return JSON.parse(row.value) as T;
+  const data = fs.readFileSync(CATEGORIES_FILE, 'utf-8');
+  return JSON.parse(data);
 }
 
-function setValue<T>(key: string, value: T): void {
+export function saveCategories(categories: string[]): void {
   initDB();
-  const stmt = db.prepare('INSERT OR REPLACE INTO json_store (key, value) VALUES (?, ?)');
-  stmt.run(key, JSON.stringify(value));
+  fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(categories, null, 2), 'utf-8');
 }
 
-export function getCategories(): string[] { return getValue<string[]>('categories'); }
-export function saveCategories(categories: string[]): void { setValue('categories', categories); }
+export function getSettings(): Settings {
+  initDB();
+  const data = fs.readFileSync(SETTINGS_FILE, 'utf-8');
+  return JSON.parse(data);
+}
 
-export function getSettings(): Settings { return getValue<Settings>('settings'); }
-export function saveSettings(settings: Settings): void { setValue('settings', settings); }
+export function saveSettings(settings: Settings): void {
+  initDB();
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
+}
 
-export function getUsers(): User[] { return getValue<User[]>('users'); }
-export function saveUsers(users: User[]): void { setValue('users', users); }
+export function getUsers(): User[] {
+  initDB();
+  const data = fs.readFileSync(USERS_FILE, 'utf-8');
+  return JSON.parse(data);
+}
 
-export function getProducts(): Product[] { return getValue<Product[]>('products'); }
-export function saveProducts(products: Product[]): void { setValue('products', products); }
+export function saveUsers(users: User[]): void {
+  initDB();
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
+}
+export function getProducts(): Product[] {
+  initDB();
+  const data = fs.readFileSync(PRODUCTS_FILE, 'utf-8');
+  return JSON.parse(data);
+}
 
-export function getOrders(): Order[] { return getValue<Order[]>('orders'); }
-export function saveOrders(orders: Order[]): void { setValue('orders', orders); }
+export function saveProducts(products: Product[]): void {
+  initDB();
+  fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2), 'utf-8');
+}
 
-export function getCoupons(): Coupon[] { return getValue<Coupon[]>('coupons'); }
-export function saveCoupons(coupons: Coupon[]): void { setValue('coupons', coupons); }
+export function getOrders(): Order[] {
+  initDB();
+  const data = fs.readFileSync(ORDERS_FILE, 'utf-8');
+  return JSON.parse(data);
+}
 
-export function getVerifications(): Verification[] { return getValue<Verification[]>('verifications'); }
-export function saveVerifications(verifications: Verification[]): void { setValue('verifications', verifications); }
+export function saveOrders(orders: Order[]): void {
+  initDB();
+  fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2), 'utf-8');
+}
+
+export function getCoupons(): Coupon[] {
+  initDB();
+  const data = fs.readFileSync(COUPONS_FILE, 'utf-8');
+  return JSON.parse(data);
+}
+
+export function saveCoupons(coupons: Coupon[]): void {
+  initDB();
+  fs.writeFileSync(COUPONS_FILE, JSON.stringify(coupons, null, 2), 'utf-8');
+}
+
+export function getVerifications(): Verification[] {
+  initDB();
+  const data = fs.readFileSync(VERIFICATIONS_FILE, 'utf-8');
+  return JSON.parse(data);
+}
+
+export function saveVerifications(verifications: Verification[]): void {
+  initDB();
+  fs.writeFileSync(VERIFICATIONS_FILE, JSON.stringify(verifications, null, 2), 'utf-8');
+}
 
 // Authentication Config
 export const ADMIN_AUTH = {
