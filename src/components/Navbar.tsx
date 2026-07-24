@@ -61,6 +61,9 @@ export default function Navbar() {
           <a href="/#services" className="text-sm font-medium text-slate-300 hover:text-neon-cyan transition-colors">
             Services
           </a>
+          <Link href="/customer" className="text-sm font-bold text-neon-purple hover:text-neon-pink transition-colors">
+            Become a Reseller
+          </Link>
           <a href="https://t.me/chhayhengs" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-slate-300 hover:text-[#0088cc] transition-colors flex items-center space-x-1">
             <span>Contact Support</span>
           </a>
