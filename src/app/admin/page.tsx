@@ -125,7 +125,7 @@ export default function AdminPortal() {
       const res = await fetch('/api/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailInput, password: passwordInput })
+        body: JSON.stringify({ action: 'signin', email: emailInput, password: passwordInput })
       });
       const data = await res.json();
 
