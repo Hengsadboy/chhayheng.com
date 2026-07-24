@@ -30,9 +30,11 @@ export interface Order {
 export interface User {
   email: string;
   passwordHash: string;
-  role: 'customer' | 'admin';
+  role: 'customer' | 'admin' | 'reseller';
   username?: string;
   phone?: string;
+  balance?: number;
+  apiKey?: string;
 }
 
 export interface Settings {

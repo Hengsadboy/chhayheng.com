@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ShoppingBag, Loader2, ArrowRight, ShieldCheck, Clock, Download, FileText, CheckCircle2 } from 'lucide-react';
+import { ShoppingBag, Loader2, ArrowRight, ShieldCheck, Clock, Download, FileText, CheckCircle2, DollarSign, Key, Zap, X } from 'lucide-react';
 import NeoCard from '@/components/NeoCard';
 
 interface Order {
@@ -19,7 +19,13 @@ interface Order {
 }
 
 export default function CustomerDashboard() {
-  const [session, setSession] = useState<{ email: string } | null>(null);
+  const [session, setSession] = useState<{ email: string, role: string } | null>(null);
+  const [resellerDetails, setResellerDetails] = useState<{ balance: number, apiKey: string } | null>(null);
+  const [resellerAction, setResellerAction] = useState<'register' | 'topup' | null>(null);
+  const [topupAmount, setTopupAmount] = useState('10');
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [paymentStatusText, setPaymentStatusText] = useState('');
+  const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [usernameInput, setUsernameInput] = useState('');
@@ -37,12 +43,32 @@ export default function CustomerDashboard() {
     const stored = localStorage.getItem('user_session');
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (parsed.role === 'customer') {
+      if (parsed.role === 'customer' || parsed.role === 'reseller') {
         setSession(parsed);
         fetchCustomerOrders(parsed.email);
+        if (parsed.role === 'reseller') fetchResellerDetails(parsed.email);
       }
     }
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    }
   }, []);
+
+  const fetchResellerDetails = async (email: string) => {
+    try {
+      const res = await fetch('/api/reseller', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'details', email })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) setResellerDetails({ balance: data.balance, apiKey: data.apiKey });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const fetchCustomerOrders = async (email: string) => {
     setLoadingOrders(true);
@@ -154,6 +180,82 @@ export default function CustomerDashboard() {
     } catch {
       setLoginError('Server connection error.');
     } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleResellerPayment = async (action: 'register' | 'topup') => {
+    if (!session) return;
+    const amount = action === 'register' ? '1.00' : topupAmount;
+    setIsProcessing(true);
+    setPaymentStatusText('Generating Secure Payment QR...');
+    setResellerAction(action);
+    setQrCodeUrl('');
+
+    try {
+      const res = await fetch('/api/payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create', amount })
+      });
+      if (!res.ok) throw new Error('Gateway error');
+      const paymentData = await res.json();
+      
+      if (paymentData.status?.code === '00') {
+        setQrCodeUrl(paymentData.download_qr);
+        setPaymentStatusText('Scan KHQR using ABA or any bank app to pay...');
+
+        pollTimerRef.current = setInterval(async () => {
+          try {
+            const checkRes = await fetch('/api/payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'check', tran_id: paymentData.status.tran_id, client_id: paymentData.client_id })
+            });
+
+            if (checkRes.ok) {
+              const statusData = await checkRes.json();
+              const isApproved = statusData.meta?.payment_approved === true ||
+                                 statusData.meta?.finished === true ||
+                                 statusData.data?.message?.message === 'Approved';
+
+              if (isApproved) {
+                if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+                setPaymentStatusText('Payment Approved! Updating account...');
+                
+                const completeRes = await fetch('/api/reseller', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    action,
+                    email: session.email,
+                    amount,
+                    tran_id: paymentData.status.tran_id,
+                    client_id: paymentData.client_id
+                  })
+                });
+
+                if (completeRes.ok) {
+                  const data = await completeRes.json();
+                  if (action === 'register') {
+                    const newSession = { email: session.email, role: 'reseller' };
+                    localStorage.setItem('user_session', JSON.stringify(newSession));
+                    setSession(newSession);
+                    fetchResellerDetails(session.email);
+                  } else {
+                    fetchResellerDetails(session.email);
+                  }
+                  setResellerAction(null);
+                  setIsProcessing(false);
+                }
+              }
+            }
+          } catch (e) { console.error(e); }
+        }, 3000);
+      } else {
+        setIsProcessing(false);
+      }
+    } catch (e) {
       setIsProcessing(false);
     }
   };
@@ -420,17 +522,110 @@ export default function CustomerDashboard() {
           )}
         </div>
 
-        {/* Sidebar Info */}
+        {/* Sidebar Info & Reseller Panel */}
         <div className="space-y-6">
-          <NeoCard glowColor="blue">
-            <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2 mb-4">
-              <ShieldCheck className="w-4 h-4 text-neon-blue" />
-              <span>Purchase Protection</span>
-            </h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              All bot assets, web systems, and softwares feature full integration assistance and clean code documentation.
-            </p>
-          </NeoCard>
+          {session.role === 'customer' && (
+            <NeoCard glowColor="purple">
+              <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2 mb-4">
+                <Zap className="w-4 h-4 text-neon-purple" />
+                <span>Become a Reseller</span>
+              </h3>
+              <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                Unlock 20% flat discount on all products and access our developer API to automate orders. One-time registration fee: $1.00.
+              </p>
+              <button 
+                onClick={() => handleResellerPayment('register')}
+                className="w-full py-2 bg-gradient-to-r from-neon-purple to-neon-pink rounded text-xs font-bold text-slate-100 uppercase tracking-wide hover:opacity-90 transition-all"
+              >
+                Register for $1.00
+              </button>
+            </NeoCard>
+          )}
+
+          {session.role === 'reseller' && resellerDetails && (
+            <>
+              <NeoCard glowColor="cyan" className="border-neon-cyan/30 bg-[#050512]">
+                <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2 mb-4">
+                  <DollarSign className="w-4 h-4 text-neon-cyan" />
+                  <span>Reseller Balance</span>
+                </h3>
+                <div className="text-3xl font-black text-neon-cyan mb-4">
+                  ${resellerDetails.balance.toFixed(2)}
+                </div>
+                <div className="flex space-x-2 mb-2">
+                  <input 
+                    type="number" 
+                    value={topupAmount} 
+                    onChange={(e) => setTopupAmount(e.target.value)} 
+                    className="flex-1 bg-slate-950 border border-[#1e1e38] rounded px-3 py-1 text-sm text-slate-200 focus:outline-none focus:border-neon-cyan/50"
+                  />
+                  <button 
+                    onClick={() => handleResellerPayment('topup')}
+                    className="px-4 py-1.5 bg-neon-cyan text-slate-950 rounded text-xs font-bold uppercase"
+                  >
+                    Top Up
+                  </button>
+                </div>
+              </NeoCard>
+              
+              <NeoCard glowColor="blue">
+                <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2 mb-4">
+                  <Key className="w-4 h-4 text-neon-blue" />
+                  <span>Reseller API Access</span>
+                </h3>
+                <p className="text-[10px] text-slate-400 mb-2">Your secure API key (Do not share):</p>
+                <div className="p-2 bg-slate-950 border border-[#1e1e38] rounded text-[10px] font-mono text-slate-300 break-all mb-4 relative group">
+                  <span className="blur-sm group-hover:blur-none transition-all">{resellerDetails.apiKey}</span>
+                </div>
+                <div className="space-y-2 border-t border-[#1e1e38] pt-4">
+                  <div className="text-[10px] font-bold text-slate-300">API Usage Example (cURL)</div>
+                  <pre className="p-2 bg-slate-950 border border-[#1e1e38] rounded text-[9px] font-mono text-slate-400 overflow-x-auto">
+                    {`curl -X POST https://chhayheng.online/api/reseller \\
+  -H 'Content-Type: application/json' \\
+  -d '{
+    "action": "order",
+    "apiKey": "${resellerDetails.apiKey.substring(0, 8)}...",
+    "productId": "1"
+  }'`}
+                  </pre>
+                </div>
+              </NeoCard>
+            </>
+          )}
+
+          {resellerAction && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+              <NeoCard glowColor="pink" className="w-full max-w-md p-6 relative">
+                <button 
+                  onClick={() => {
+                    setResellerAction(null);
+                    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+                  }} 
+                  className="absolute top-4 right-4 text-slate-400 hover:text-slate-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                <div className="text-center space-y-4">
+                  <h3 className="text-lg font-bold text-slate-100">
+                    {resellerAction === 'register' ? 'Reseller Registration ($1)' : `Top Up $${topupAmount}`}
+                  </h3>
+                  {qrCodeUrl ? (
+                    <div className="space-y-4">
+                      <div className="w-48 h-48 mx-auto rounded-xl border border-[#1e1e38] bg-white p-2">
+                        <img src={qrCodeUrl} alt="KHQR" className="w-full h-full object-contain" />
+                      </div>
+                      <p className="text-xs font-mono text-neon-cyan animate-pulse">{paymentStatusText}</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <Loader2 className="w-8 h-8 text-neon-pink animate-spin mb-4" />
+                      <p className="text-xs text-slate-400">{paymentStatusText}</p>
+                    </div>
+                  )}
+                </div>
+              </NeoCard>
+            </div>
+          )}
 
           <NeoCard glowColor="purple">
             <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2 mb-4">
