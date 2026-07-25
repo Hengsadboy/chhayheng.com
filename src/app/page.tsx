@@ -766,15 +766,19 @@ export default function Home() {
                   /* Form view if logged in */
                   !isProcessing && !qrCodeUrl && (
                     <form onSubmit={handlePurchaseSubmit} className="space-y-4">
-                      {(selectedProduct.category.toLowerCase().includes('bot') || selectedProduct.category.toLowerCase().includes('web') || selectedProduct.category.toLowerCase().includes('software')) && (
+                      {(selectedProduct.requiresInput || selectedProduct.category.toLowerCase().includes('bot') || selectedProduct.category.toLowerCase().includes('web') || selectedProduct.category.toLowerCase().includes('software')) && (
                         <div>
-                          <label className="block text-xs font-medium text-slate-400 mb-1.5">Project Requirements & Design Notes</label>
+                          <label className="block text-xs font-semibold text-amber-400 mb-1.5 flex items-center space-x-1">
+                            <span>{selectedProduct.inputLabel || 'Project Requirements & Account Details'}</span>
+                            {selectedProduct.requiresInput && <span className="text-rose-400 font-bold">*</span>}
+                          </label>
                           <textarea
                             rows={3}
+                            required={selectedProduct.requiresInput}
                             value={requirements}
                             onChange={(e) => setRequirements(e.target.value)}
-                            placeholder="Explain what you want built (design styles, functions, specific guidelines)..."
-                            className="w-full bg-slate-950/80 border border-[#1e1e38] rounded-md px-3.5 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-neon-cyan/50 transition-all resize-none"
+                            placeholder={selectedProduct.inputPlaceholder || "Enter your email, username, or specific details for this order..."}
+                            className="w-full bg-slate-950/80 border border-amber-500/30 rounded-md px-3.5 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-400/80 transition-all resize-none"
                           />
                         </div>
                       )}

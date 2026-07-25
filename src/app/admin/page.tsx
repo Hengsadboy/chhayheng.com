@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldAlert, Settings, Plus, Edit2, Trash2, ShoppingCart, 
   Layers, Package, Check, Save, X, Edit, HardDrive, RefreshCw,
-  TrendingUp, DollarSign, Activity, Briefcase, Users, MessageSquare
+  TrendingUp, DollarSign, Activity, Briefcase, Users, MessageSquare, Sparkles, Wand2
 } from 'lucide-react';
 import NeoCard from '@/components/NeoCard';
 
@@ -19,6 +19,9 @@ interface Product {
   deliveryTime: string;
   stockAccounts?: string[];
   image?: string;
+  requiresInput?: boolean;
+  inputLabel?: string;
+  inputPlaceholder?: string;
 }
 
 interface Order {
@@ -52,7 +55,10 @@ export default function AdminPortal() {
     features: [''],
     deliveryTime: '3-5 Days',
     stockAccounts: [],
-    image: ''
+    image: '',
+    requiresInput: false,
+    inputLabel: '',
+    inputPlaceholder: ''
   });
 
   // Orders State
@@ -78,6 +84,45 @@ export default function AdminPortal() {
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [websiteUsers, setWebsiteUsers] = useState<any[]>([]);
   const [tgUsers, setTgUsers] = useState<any[]>([]);
+
+  // AI Description Generator State
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+
+  const handleGenerateAi = async (productName: string, isEditing = false) => {
+    if (!productName) {
+      alert('Please enter a Product Name first!');
+      return;
+    }
+    setIsGeneratingAi(true);
+    try {
+      const res = await fetch('/api/ai/generate-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': getAdminKey() },
+        body: JSON.stringify({ productName })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          if (isEditing && editingProduct) {
+            setEditingProduct({
+              ...editingProduct,
+              description: data.description,
+              features: data.features && data.features.length > 0 ? data.features : editingProduct.features
+            });
+          } else {
+            setNewProduct({
+              ...newProduct,
+              description: data.description,
+              features: data.features && data.features.length > 0 ? data.features : newProduct.features
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error('AI Generation failed', err);
+    }
+    setIsGeneratingAi(false);
+  };
 
   // UI view state - Default to the new Salary/Revenue Analytics tab
   const [activeTab, setActiveTab] = useState<'analytics' | 'products' | 'orders' | 'users' | 'settings' | 'coupons' | 'broadcast'>('analytics');
@@ -955,7 +1000,18 @@ export default function AdminPortal() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-1.5">Description</label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-medium text-slate-400">Description</label>
+                        <button
+                          type="button"
+                          disabled={isGeneratingAi}
+                          onClick={() => handleGenerateAi(newProduct.name, false)}
+                          className="px-2.5 py-1 bg-gradient-to-r from-neon-purple to-neon-pink text-slate-950 text-[10px] font-black rounded-md hover:glow-purple transition-all flex items-center space-x-1 disabled:opacity-50"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          <span>{isGeneratingAi ? 'Generating AI...' : '✨ AI Generate Copy'}</span>
+                        </button>
+                      </div>
                       <textarea
                         rows={3}
                         required
@@ -1050,6 +1106,47 @@ export default function AdminPortal() {
                       />
                     </div>
 
+                    {/* Custom Customer Detail Box */}
+                    <div className="p-3 bg-slate-950/80 border border-[#1e1e38] rounded-lg space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-xs font-bold text-slate-200">+ Require Customer Input Detail Box</div>
+                          <div className="text-[10px] text-slate-400">For Family Group invites, Email targets, or custom instructions</div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={newProduct.requiresInput || false}
+                          onChange={(e) => setNewProduct({ ...newProduct, requiresInput: e.target.checked })}
+                          className="w-4 h-4 rounded border-slate-700 text-neon-purple focus:ring-neon-purple"
+                        />
+                      </div>
+
+                      {newProduct.requiresInput && (
+                        <div className="space-y-2 pt-2 border-t border-[#1e1e38]">
+                          <div>
+                            <label className="block text-[11px] font-medium text-slate-400 mb-1">Input Label Title</label>
+                            <input
+                              type="text"
+                              value={newProduct.inputLabel || ''}
+                              onChange={(e) => setNewProduct({ ...newProduct, inputLabel: e.target.value })}
+                              placeholder="e.g. Enter your Email for YouTube Family Invite"
+                              className="w-full bg-slate-900 border border-[#1e1e38] rounded px-3 py-1.5 text-xs text-slate-200"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-medium text-slate-400 mb-1">Input Placeholder Text</label>
+                            <input
+                              type="text"
+                              value={newProduct.inputPlaceholder || ''}
+                              onChange={(e) => setNewProduct({ ...newProduct, inputPlaceholder: e.target.value })}
+                              placeholder="e.g. yourname@gmail.com"
+                              className="w-full bg-slate-900 border border-[#1e1e38] rounded px-3 py-1.5 text-xs text-slate-200"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     <button
                       type="submit"
                       className="w-full py-2.5 rounded bg-gradient-to-r from-neon-purple to-neon-pink text-slate-950 font-bold text-xs uppercase tracking-wider mt-4"
@@ -1134,7 +1231,18 @@ export default function AdminPortal() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-slate-400 mb-1.5">Description</label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-medium text-slate-400">Description</label>
+                        <button
+                          type="button"
+                          disabled={isGeneratingAi}
+                          onClick={() => handleGenerateAi(editingProduct.name, true)}
+                          className="px-2.5 py-1 bg-gradient-to-r from-neon-cyan to-neon-blue text-slate-950 text-[10px] font-black rounded-md hover:glow-cyan transition-all flex items-center space-x-1 disabled:opacity-50"
+                        >
+                          <Sparkles className="w-3 h-3" />
+                          <span>{isGeneratingAi ? 'Generating AI...' : '✨ AI Generate Copy'}</span>
+                        </button>
+                      </div>
                       <textarea
                         rows={3}
                         required
@@ -1226,6 +1334,47 @@ export default function AdminPortal() {
                         placeholder="https://images.unsplash.com/..."
                         className="w-full bg-slate-950 border border-[#1e1e38] rounded-md px-3.5 py-2 text-xs text-slate-200 focus:outline-none"
                       />
+                    </div>
+
+                    {/* Custom Customer Detail Box */}
+                    <div className="p-3 bg-slate-950/80 border border-[#1e1e38] rounded-lg space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-xs font-bold text-slate-200">+ Require Customer Input Detail Box</div>
+                          <div className="text-[10px] text-slate-400">For Family Group invites, Email targets, or custom instructions</div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={editingProduct.requiresInput || false}
+                          onChange={(e) => setEditingProduct({ ...editingProduct, requiresInput: e.target.checked })}
+                          className="w-4 h-4 rounded border-slate-700 text-neon-purple focus:ring-neon-purple"
+                        />
+                      </div>
+
+                      {editingProduct.requiresInput && (
+                        <div className="space-y-2 pt-2 border-t border-[#1e1e38]">
+                          <div>
+                            <label className="block text-[11px] font-medium text-slate-400 mb-1">Input Label Title</label>
+                            <input
+                              type="text"
+                              value={editingProduct.inputLabel || ''}
+                              onChange={(e) => setEditingProduct({ ...editingProduct, inputLabel: e.target.value })}
+                              placeholder="e.g. Enter your Email for YouTube Family Invite"
+                              className="w-full bg-slate-900 border border-[#1e1e38] rounded px-3 py-1.5 text-xs text-slate-200"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-medium text-slate-400 mb-1">Input Placeholder Text</label>
+                            <input
+                              type="text"
+                              value={editingProduct.inputPlaceholder || ''}
+                              onChange={(e) => setEditingProduct({ ...editingProduct, inputPlaceholder: e.target.value })}
+                              placeholder="e.g. yourname@gmail.com"
+                              className="w-full bg-slate-900 border border-[#1e1e38] rounded px-3 py-1.5 text-xs text-slate-200"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <button

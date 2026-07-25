@@ -189,7 +189,10 @@ export async function POST(request: Request) {
         category: p.category,
         deliveryTime: p.deliveryTime,
         stockCount: p.stockAccounts ? p.stockAccounts.length : 0,
-        image: p.image
+        image: p.image,
+        requiresInput: p.requiresInput || false,
+        inputLabel: p.inputLabel || '',
+        inputPlaceholder: p.inputPlaceholder || ''
       }));
       return NextResponse.json({ success: true, products: wholesaleProducts });
     }

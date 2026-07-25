@@ -13,6 +13,9 @@ export interface Product {
   stockAccounts?: string[];
   stockCount?: number;
   image?: string;
+  requiresInput?: boolean;
+  inputLabel?: string;
+  inputPlaceholder?: string;
 }
 
 export interface Order {
