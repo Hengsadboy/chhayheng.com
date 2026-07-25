@@ -1,6 +1,34 @@
 import { NextResponse } from 'next/server';
 import { getProducts, saveProducts, Product, verifyAdminRequest } from '@/lib/db';
 
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const products = getProducts();
+    const product = products.find(p => p.id === id);
+
+    if (!product) {
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    const isAdmin = verifyAdminRequest(request);
+    if (isAdmin) {
+      return NextResponse.json({
+        ...product,
+        stockCount: product.stockAccounts ? product.stockAccounts.length : 0
+      });
+    }
+
+    const { stockAccounts, ...rest } = product;
+    return NextResponse.json({
+      ...rest,
+      stockCount: stockAccounts ? stockAccounts.length : 0
+    });
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch product' }, { status: 500 });
+  }
+}
+
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     if (!verifyAdminRequest(request)) {

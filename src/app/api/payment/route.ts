@@ -1,10 +1,35 @@
 import { NextResponse } from 'next/server';
+import { getProducts, getCoupons } from '@/lib/db';
 
 export async function POST(request: Request) {
   try {
-    const { action, amount, tran_id, client_id } = await request.json();
+    const { action, amount, productId, couponCode, tran_id, client_id } = await request.json();
 
     if (action === 'create') {
+      let finalAmount = amount;
+
+      // If productId is provided, calculate price strictly on server to prevent manipulation
+      if (productId) {
+        const products = getProducts();
+        const product = products.find(p => p.id === productId);
+        if (!product) {
+          return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+        }
+        let calcPrice = product.price;
+        if (couponCode) {
+          const coupons = getCoupons();
+          const validCoupon = coupons.find(c => c.code.toUpperCase() === couponCode.toUpperCase().trim());
+          if (validCoupon) {
+            calcPrice = Number((calcPrice * (1 - validCoupon.discountPercentage / 100)).toFixed(2));
+          }
+        }
+        finalAmount = calcPrice.toString();
+      }
+
+      if (!finalAmount || parseFloat(finalAmount) <= 0) {
+        return NextResponse.json({ error: 'Invalid payment amount' }, { status: 400 });
+      }
+
       // Call create-qr API
       const res = await fetch('https://2008.site/payway/api/create-qr', {
         method: 'POST',
@@ -13,7 +38,7 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify({
           url: 'https://link.payway.com.kh/ABAPAYEA437661K',
-          amount: amount || '0.01' // fallback for safety
+          amount: finalAmount
         })
       });
 

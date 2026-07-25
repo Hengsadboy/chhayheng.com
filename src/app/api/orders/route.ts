@@ -27,26 +27,56 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { customerEmail, productId, productName, price, requirements } = await request.json();
+    const { customerEmail, productId, productName, price, requirements, tran_id, client_id } = await request.json();
 
-    if (!customerEmail || !productId || !productName || !price) {
+    if (!customerEmail || !productId || !productName || price === undefined) {
       return NextResponse.json({ error: 'Missing required order details' }, { status: 400 });
     }
 
+    const isAdmin = verifyAdminRequest(request);
     const products = getProducts();
     const product = products.find(p => p.id === productId);
 
     let status: Order['status'] = 'Pending';
     let deliverables = '';
+    let isPaymentVerified = false;
 
-    // Automated Digital Product Key/Account Claiming
-    if (product && product.stockAccounts && product.stockAccounts.length > 0) {
+    // Admin can manually create completed orders, or verify via PayWay gateway
+    if (isAdmin) {
+      isPaymentVerified = true;
+    } else if (tran_id && client_id) {
+      try {
+        const checkRes = await fetch('https://2008.site/payway/api/check-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tran_id, client_id })
+        });
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          if (
+            checkData.meta?.payment_approved === true ||
+            checkData.meta?.finished === true ||
+            checkData.data?.message?.message === 'Approved'
+          ) {
+            isPaymentVerified = true;
+          }
+        }
+      } catch (e) {
+        console.error('PayWay verification failed:', e);
+      }
+    }
+
+    // Automated Digital Product Key/Account Claiming ONLY IF payment is verified
+    if (isPaymentVerified && product && product.stockAccounts && product.stockAccounts.length > 0) {
       const claimedAccount = product.stockAccounts.shift();
       if (claimedAccount) {
         status = 'Completed';
         deliverables = claimedAccount;
         saveProducts(products); // save products back with claimed item removed
       }
+    } else if (!isPaymentVerified && product && product.stockAccounts) {
+      // Reject unverified order creation attempts trying to claim digital stock
+      return NextResponse.json({ error: 'Payment verification required before claiming stock' }, { status: 402 });
     }
 
     const orders = getOrders();
