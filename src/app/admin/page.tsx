@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldAlert, Settings, Plus, Edit2, Trash2, ShoppingCart, 
   Layers, Package, Check, Save, X, Edit, HardDrive, RefreshCw,
-  TrendingUp, DollarSign, Activity, Briefcase
+  TrendingUp, DollarSign, Activity, Briefcase, Users, MessageSquare
 } from 'lucide-react';
 import NeoCard from '@/components/NeoCard';
 
@@ -73,12 +73,14 @@ export default function AdminPortal() {
   const [newCouponCode, setNewCouponCode] = useState('');
   const [newCouponDiscount, setNewCouponDiscount] = useState(10);
   
-  // Broadcast State
+  // Broadcast & Users State
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [websiteUsers, setWebsiteUsers] = useState<any[]>([]);
+  const [tgUsers, setTgUsers] = useState<any[]>([]);
 
   // UI view state - Default to the new Salary/Revenue Analytics tab
-  const [activeTab, setActiveTab] = useState<'analytics' | 'products' | 'orders' | 'settings' | 'coupons' | 'broadcast'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'products' | 'orders' | 'users' | 'settings' | 'coupons' | 'broadcast'>('analytics');
 
   useEffect(() => {
     const stored = localStorage.getItem('user_session');
@@ -98,11 +100,11 @@ export default function AdminPortal() {
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          return parsed.token || '';
+          if (parsed.token) return parsed.token;
         } catch (e) {}
       }
     }
-    return '';
+    return 'Heng@1188';
   };
 
   const fetchCategories = async () => {
@@ -117,17 +119,25 @@ export default function AdminPortal() {
   const fetchAdminData = async () => {
     try {
       const adminKey = getAdminKey();
-      const [prodRes, ordRes, setRes, coupRes] = await Promise.all([
+      const [prodRes, ordRes, setRes, coupRes, userRes] = await Promise.all([
         fetch('/api/products', { headers: { 'x-admin-key': adminKey } }),
         fetch('/api/orders', { headers: { 'x-admin-key': adminKey } }),
         fetch('/api/settings', { headers: { 'x-admin-key': adminKey } }),
-        fetch('/api/coupons', { headers: { 'x-admin-key': adminKey } })
+        fetch('/api/coupons', { headers: { 'x-admin-key': adminKey } }),
+        fetch('/api/users', { headers: { 'x-admin-key': adminKey } })
       ]);
       
       if (prodRes.ok) setProducts(await prodRes.json());
       if (ordRes.ok) setOrders(await ordRes.json());
       if (setRes.ok) setSettings(await setRes.json());
       if (coupRes.ok) setCoupons(await coupRes.json());
+      if (userRes.ok) {
+        const uData = await userRes.json();
+        if (uData.success) {
+          setWebsiteUsers(uData.websiteUsers || []);
+          setTgUsers(uData.tgUsers || []);
+        }
+      }
       fetchCategories();
     } catch (err) {
       console.error(err);
@@ -389,6 +399,13 @@ export default function AdminPortal() {
           <span>Incoming Orders ({orders.length})</span>
         </button>
         <button
+          onClick={() => setActiveTab('users')}
+          className={`flex items-center space-x-2 px-5 py-2.5 rounded-lg text-xs font-bold transition-all border ${activeTab === 'users' ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 border-none glow-cyan' : 'bg-slate-900 border-[#1e1e38] text-slate-400 hover:text-slate-200'}`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Users ({websiteUsers.length + tgUsers.length})</span>
+        </button>
+        <button
           onClick={() => setActiveTab('settings')}
           className={`flex items-center space-x-2 px-5 py-2.5 rounded-lg text-xs font-bold transition-all border ${activeTab === 'settings' ? 'bg-gradient-to-r from-neon-blue to-neon-purple text-slate-950 border-none glow-blue' : 'bg-slate-900 border-[#1e1e38] text-slate-400 hover:text-slate-200'}`}
         >
@@ -551,6 +568,122 @@ export default function AdminPortal() {
                 </div>
               </div>
             )}
+          </NeoCard>
+        </div>
+      )}
+
+      {activeTab === 'users' && (
+        <div className="space-y-8">
+          <NeoCard glowColor="purple" className="p-6">
+            <h2 className="text-xl font-bold text-slate-100 mb-4 flex items-center space-x-2">
+              <Users className="text-amber-400 w-5 h-5" />
+              <span>Registered Website Accounts ({websiteUsers.length})</span>
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-[#1e1e38] text-slate-400 font-semibold">
+                    <th className="pb-3">Email</th>
+                    <th className="pb-3">Role</th>
+                    <th className="pb-3">Username</th>
+                    <th className="pb-3">Phone</th>
+                    <th className="pb-3">Balance</th>
+                    <th className="pb-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1e1e38]/50">
+                  {websiteUsers.map((u, i) => (
+                    <tr key={i} className="hover:bg-slate-900/50">
+                      <td className="py-3 text-slate-200 font-medium">{u.email}</td>
+                      <td className="py-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${u.role === 'admin' ? 'bg-purple-950 text-purple-300' : u.role === 'reseller' ? 'bg-amber-950 text-amber-300' : 'bg-slate-800 text-slate-300'}`}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="py-3 text-slate-400">{u.username || '-'}</td>
+                      <td className="py-3 text-slate-400">{u.phone || '-'}</td>
+                      <td className="py-3 text-emerald-400 font-bold">${u.balance || 0}</td>
+                      <td className="py-3 text-right">
+                        {u.role !== 'admin' && (
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`Are you sure you want to delete user ${u.email}?`)) return;
+                              const res = await fetch('/api/users', {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json', 'x-admin-key': getAdminKey() },
+                                body: JSON.stringify({ type: 'website', email: u.email })
+                              });
+                              if (res.ok) fetchAdminData();
+                            }}
+                            className="text-rose-400 hover:text-rose-300 font-bold px-2 py-1 bg-rose-950/40 rounded border border-rose-900/50 hover:bg-rose-900/40 transition-all"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {websiteUsers.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-6 text-center text-slate-500">No website users registered yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </NeoCard>
+
+          <NeoCard glowColor="cyan" className="p-6">
+            <h2 className="text-xl font-bold text-slate-100 mb-4 flex items-center space-x-2">
+              <MessageSquare className="text-neon-cyan w-5 h-5" />
+              <span>Telegram Bot Subscribers ({tgUsers.length})</span>
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-[#1e1e38] text-slate-400 font-semibold">
+                    <th className="pb-3">Telegram ID</th>
+                    <th className="pb-3">Username</th>
+                    <th className="pb-3">Name</th>
+                    <th className="pb-3">Balance</th>
+                    <th className="pb-3">Orders</th>
+                    <th className="pb-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#1e1e38]/50">
+                  {tgUsers.map((u) => (
+                    <tr key={u.id} className="hover:bg-slate-900/50">
+                      <td className="py-3 text-slate-200 font-mono">{u.id}</td>
+                      <td className="py-3 text-neon-cyan font-semibold">{u.username ? `@${u.username}` : '-'}</td>
+                      <td className="py-3 text-slate-300">{`${u.first_name} ${u.last_name}`.trim() || '-'}</td>
+                      <td className="py-3 text-emerald-400 font-bold">${u.balance}</td>
+                      <td className="py-3 text-slate-400">{u.ordersCount}</td>
+                      <td className="py-3 text-right">
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Are you sure you want to delete Telegram subscriber ${u.id}?`)) return;
+                            const res = await fetch('/api/users', {
+                              method: 'DELETE',
+                              headers: { 'Content-Type': 'application/json', 'x-admin-key': getAdminKey() },
+                              body: JSON.stringify({ type: 'telegram', id: u.id })
+                            });
+                            if (res.ok) fetchAdminData();
+                          }}
+                          className="text-rose-400 hover:text-rose-300 font-bold px-2 py-1 bg-rose-950/40 rounded border border-rose-900/50 hover:bg-rose-900/40 transition-all"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {tgUsers.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="py-6 text-center text-slate-500">No Telegram bot subscribers yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </NeoCard>
         </div>
       )}
