@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, MessageSquare, Terminal, Globe, Cpu, Check, ShoppingCart, ArrowRight, X, Gift, Sparkles, Loader2, RefreshCw, Search } from 'lucide-react';
+import { Bot, MessageSquare, Terminal, Globe, Cpu, Check, ShoppingCart, ArrowRight, X, Gift, Sparkles, Loader2, RefreshCw, Search, WifiOff, AlertTriangle } from 'lucide-react';
 import NeoCard from '@/components/NeoCard';
 import InfiniteMarquee from '@/components/InfiniteMarquee';
 
@@ -59,7 +59,19 @@ export default function Home() {
   const [passwordInput, setPasswordInput] = useState('');
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
+  // Offline Network Detection State
+  const [isOffline, setIsOffline] = useState(false);
+
   useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setIsOffline(true);
+    }
+
     // Parallel fetch products & categories for instant mobile loading
     Promise.all([
       fetch('/api/products').then(res => res.json()),
@@ -70,6 +82,7 @@ export default function Home() {
       setLoading(false);
     }).catch(err => {
       console.error(err);
+      setIsOffline(true);
       setLoading(false);
     });
 
@@ -337,6 +350,23 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen">
+      {/* Offline Banner Notification */}
+      {isOffline && (
+        <div className="fixed top-16 left-0 right-0 z-50 bg-rose-950/90 border-b border-rose-500/40 text-rose-200 px-4 py-2 text-xs font-bold flex items-center justify-between backdrop-blur-md">
+          <div className="flex items-center space-x-2">
+            <WifiOff className="w-4 h-4 text-rose-400 animate-pulse" />
+            <span>You are currently offline. Check your internet connection.</span>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-3 py-1 bg-rose-500 text-slate-950 rounded text-[10px] font-black hover:bg-rose-400 transition-all flex items-center space-x-1"
+          >
+            <RefreshCw className="w-3 h-3" />
+            <span>Retry Connection</span>
+          </button>
+        </div>
+      )}
+
       {/* Background Decorative Animated Neon Orbs */}
       <div className="absolute top-[10%] left-[5%] w-[400px] h-[400px] rounded-full bg-neon-cyan/10 blur-[130px] pointer-events-none animate-blob-1" />
       <div className="absolute top-[45%] right-[2%] w-[480px] h-[480px] rounded-full bg-neon-purple/8 blur-[160px] pointer-events-none animate-blob-2" />
@@ -517,8 +547,23 @@ export default function Home() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="w-10 h-10 border-4 border-t-neon-purple border-r-neon-cyan border-b-transparent border-l-transparent rounded-full animate-spin" />
+          <div className="max-w-4xl mx-auto space-y-4">
+            {[1, 2, 3, 4].map((n) => (
+              <div key={n} className="p-5 md:p-6 bg-[#08081a]/80 border border-[#1e1e38] rounded-xl animate-pulse flex flex-col md:flex-row md:items-center justify-between gap-5">
+                <div className="flex items-center space-x-4 flex-grow">
+                  <div className="w-14 h-14 bg-slate-900 rounded-xl flex-shrink-0" />
+                  <div className="space-y-2.5 flex-grow">
+                    <div className="h-4 bg-slate-900 rounded w-1/3" />
+                    <div className="h-3 bg-slate-900/60 rounded w-3/4" />
+                    <div className="h-3 bg-slate-900/40 rounded w-1/2" />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between md:justify-end gap-3 min-w-[130px]">
+                  <div className="h-9 w-20 bg-slate-900 rounded-lg" />
+                  <div className="h-9 w-24 bg-slate-900 rounded-lg" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="text-center py-16 text-slate-500 text-xs">
