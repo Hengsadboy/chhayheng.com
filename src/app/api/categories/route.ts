@@ -6,7 +6,11 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const list = getCategories();
-    return NextResponse.json(list);
+    return NextResponse.json(list, {
+      headers: {
+        'Cache-Control': 'public, max-age=10, stale-while-revalidate=60'
+      }
+    });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 });
   }

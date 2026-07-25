@@ -60,23 +60,18 @@ export default function Home() {
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
   useEffect(() => {
-    fetch('/api/products')
-      .then(res => res.json())
-      .then(data => {
-        setProducts(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-
-    // Fetch dynamic categories
-    fetch('/api/categories')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setCategories(['All', ...data]);
-        }
-      })
-      .catch(err => console.error('Fetch categories error:', err));
+    // Parallel fetch products & categories for instant mobile loading
+    Promise.all([
+      fetch('/api/products').then(res => res.json()),
+      fetch('/api/categories').then(res => res.json())
+    ]).then(([prodData, catData]) => {
+      if (Array.isArray(prodData)) setProducts(prodData);
+      if (Array.isArray(catData)) setCategories(['All', ...catData]);
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
+      setLoading(false);
+    });
 
     // Load initial user session if present
     const stored = localStorage.getItem('user_session');
@@ -553,6 +548,8 @@ export default function Home() {
                           <img 
                             src={product.image} 
                             alt={product.name} 
+                            loading="lazy"
+                            decoding="async"
                             className="w-14 h-14 object-cover rounded-xl"
                           />
                         ) : (

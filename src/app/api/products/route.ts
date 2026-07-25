@@ -26,7 +26,11 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json(sanitizedProducts);
+    return NextResponse.json(sanitizedProducts, {
+      headers: {
+        'Cache-Control': 'public, max-age=10, stale-while-revalidate=60'
+      }
+    });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
   }
