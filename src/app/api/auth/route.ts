@@ -53,8 +53,8 @@ export async function POST(request: Request) {
       if (existingUser) return NextResponse.json({ success: false, message: 'Email is already registered.' }, { status: 400 });
 
       const vRecord = verifications.find(v => v.email.toLowerCase() === emailLower && v.type === 'signup' && v.code === code);
-      if (!vRecord && code !== '123456') return NextResponse.json({ success: false, message: 'Invalid or missing verification code.' }, { status: 400 });
-      if (vRecord && new Date(vRecord.expiresAt) < new Date()) return NextResponse.json({ success: false, message: 'Verification code expired.' }, { status: 400 });
+      if (!vRecord) return NextResponse.json({ success: false, message: 'Invalid or missing verification code.' }, { status: 400 });
+      if (new Date(vRecord.expiresAt) < new Date()) return NextResponse.json({ success: false, message: 'Verification code expired.' }, { status: 400 });
 
       const newUser: User = { 
         email: emailLower, 
@@ -105,8 +105,8 @@ export async function POST(request: Request) {
       if (!password || !code) return NextResponse.json({ success: false, message: 'New password and code required.' }, { status: 400 });
 
       const vRecord = verifications.find(v => v.email.toLowerCase() === emailLower && v.type === 'reset' && v.code === code);
-      if (!vRecord && code !== '123456') return NextResponse.json({ success: false, message: 'Invalid or missing reset code.' }, { status: 400 });
-      if (vRecord && new Date(vRecord.expiresAt) < new Date()) return NextResponse.json({ success: false, message: 'Reset code expired.' }, { status: 400 });
+      if (!vRecord) return NextResponse.json({ success: false, message: 'Invalid or missing reset code.' }, { status: 400 });
+      if (new Date(vRecord.expiresAt) < new Date()) return NextResponse.json({ success: false, message: 'Reset code expired.' }, { status: 400 });
 
       const userIndex = users.findIndex(u => u.email.toLowerCase() === emailLower);
       if (userIndex !== -1) {

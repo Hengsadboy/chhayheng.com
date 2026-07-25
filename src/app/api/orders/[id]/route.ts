@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getOrders, saveOrders, Order } from '@/lib/db';
+import { getOrders, saveOrders, Order, verifyAdminRequest } from '@/lib/db';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    if (!verifyAdminRequest(request)) {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 401 });
+    }
+
     const { id } = await params;
     const { status, deliverables } = await request.json();
     const orders = getOrders();

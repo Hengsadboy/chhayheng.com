@@ -208,80 +208,113 @@ function initDB() {
   }
 }
 
+// In-memory cache to optimize CPU/disk I/O on 1GB VPS
+let dbCache: {
+  categories?: string[];
+  settings?: Settings;
+  users?: User[];
+  products?: Product[];
+  orders?: Order[];
+  coupons?: Coupon[];
+  verifications?: Verification[];
+} = {};
+
 // Read & Write Helpers
 export function getCategories(): string[] {
+  if (dbCache.categories) return dbCache.categories;
   initDB();
   const data = fs.readFileSync(CATEGORIES_FILE, 'utf-8');
-  return JSON.parse(data);
+  dbCache.categories = JSON.parse(data);
+  return dbCache.categories!;
 }
 
 export function saveCategories(categories: string[]): void {
   initDB();
+  dbCache.categories = categories;
   fs.writeFileSync(CATEGORIES_FILE, JSON.stringify(categories, null, 2), 'utf-8');
 }
 
 export function getSettings(): Settings {
+  if (dbCache.settings) return dbCache.settings;
   initDB();
   const data = fs.readFileSync(SETTINGS_FILE, 'utf-8');
-  return JSON.parse(data);
+  dbCache.settings = JSON.parse(data);
+  return dbCache.settings!;
 }
 
 export function saveSettings(settings: Settings): void {
   initDB();
+  dbCache.settings = settings;
   fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8');
 }
 
 export function getUsers(): User[] {
+  if (dbCache.users) return dbCache.users;
   initDB();
   const data = fs.readFileSync(USERS_FILE, 'utf-8');
-  return JSON.parse(data);
+  dbCache.users = JSON.parse(data);
+  return dbCache.users!;
 }
 
 export function saveUsers(users: User[]): void {
   initDB();
+  dbCache.users = users;
   fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
 }
+
 export function getProducts(): Product[] {
+  if (dbCache.products) return dbCache.products;
   initDB();
   const data = fs.readFileSync(PRODUCTS_FILE, 'utf-8');
-  return JSON.parse(data);
+  dbCache.products = JSON.parse(data);
+  return dbCache.products!;
 }
 
 export function saveProducts(products: Product[]): void {
   initDB();
+  dbCache.products = products;
   fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2), 'utf-8');
 }
 
 export function getOrders(): Order[] {
+  if (dbCache.orders) return dbCache.orders;
   initDB();
   const data = fs.readFileSync(ORDERS_FILE, 'utf-8');
-  return JSON.parse(data);
+  dbCache.orders = JSON.parse(data);
+  return dbCache.orders!;
 }
 
 export function saveOrders(orders: Order[]): void {
   initDB();
+  dbCache.orders = orders;
   fs.writeFileSync(ORDERS_FILE, JSON.stringify(orders, null, 2), 'utf-8');
 }
 
 export function getCoupons(): Coupon[] {
+  if (dbCache.coupons) return dbCache.coupons;
   initDB();
   const data = fs.readFileSync(COUPONS_FILE, 'utf-8');
-  return JSON.parse(data);
+  dbCache.coupons = JSON.parse(data);
+  return dbCache.coupons!;
 }
 
 export function saveCoupons(coupons: Coupon[]): void {
   initDB();
+  dbCache.coupons = coupons;
   fs.writeFileSync(COUPONS_FILE, JSON.stringify(coupons, null, 2), 'utf-8');
 }
 
 export function getVerifications(): Verification[] {
+  if (dbCache.verifications) return dbCache.verifications;
   initDB();
   const data = fs.readFileSync(VERIFICATIONS_FILE, 'utf-8');
-  return JSON.parse(data);
+  dbCache.verifications = JSON.parse(data);
+  return dbCache.verifications!;
 }
 
 export function saveVerifications(verifications: Verification[]): void {
   initDB();
+  dbCache.verifications = verifications;
   fs.writeFileSync(VERIFICATIONS_FILE, JSON.stringify(verifications, null, 2), 'utf-8');
 }
 
@@ -290,3 +323,8 @@ export const ADMIN_AUTH = {
   email: 'Chhayheng@gmail.com',
   password: 'Heng@1188'
 };
+
+export function verifyAdminRequest(request: Request): boolean {
+  const adminKey = request.headers.get('x-admin-key');
+  return adminKey === ADMIN_AUTH.password;
+}

@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
-import { getSettings } from '@/lib/db';
+import { getSettings, verifyAdminRequest } from '@/lib/db';
 import fs from 'fs';
 import path from 'path';
 
 export async function POST(request: Request) {
   try {
+    if (!verifyAdminRequest(request)) {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 401 });
+    }
+
     const { message } = await request.json();
     if (!message || message.trim() === '') {
       return NextResponse.json({ error: 'Message cannot be empty' }, { status: 400 });

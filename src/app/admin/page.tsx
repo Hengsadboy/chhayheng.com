@@ -103,10 +103,10 @@ export default function AdminPortal() {
   const fetchAdminData = async () => {
     try {
       const [prodRes, ordRes, setRes, coupRes] = await Promise.all([
-        fetch('/api/products'),
-        fetch('/api/orders'),
-        fetch('/api/settings'),
-        fetch('/api/coupons')
+        fetch('/api/products', { headers: { 'x-admin-key': 'Heng@1188' } }),
+        fetch('/api/orders', { headers: { 'x-admin-key': 'Heng@1188' } }),
+        fetch('/api/settings', { headers: { 'x-admin-key': 'Heng@1188' } }),
+        fetch('/api/coupons', { headers: { 'x-admin-key': 'Heng@1188' } })
       ]);
       
       if (prodRes.ok) setProducts(await prodRes.json());
@@ -150,7 +150,7 @@ export default function AdminPortal() {
     try {
       const res = await fetch('/api/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': 'Heng@1188' },
         body: JSON.stringify({
           ...newProduct,
           features: newProduct.features.filter(f => f.trim() !== '')
@@ -182,7 +182,7 @@ export default function AdminPortal() {
     try {
       const res = await fetch(`/api/products/${editingProduct.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': 'Heng@1188' },
         body: JSON.stringify({
           ...editingProduct,
           features: editingProduct.features.filter(f => f.trim() !== '')
@@ -201,7 +201,8 @@ export default function AdminPortal() {
     if (!confirm('Are you sure you want to delete this product?')) return;
     try {
       const res = await fetch(`/api/products/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { 'x-admin-key': 'Heng@1188' }
       });
       if (res.ok) {
         fetchAdminData();
@@ -219,7 +220,7 @@ export default function AdminPortal() {
     try {
       const res = await fetch(`/api/orders/${updatingOrderId}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-admin-key': 'Heng@1188' },
         body: JSON.stringify({
           status: updateStatus,
           deliverables: deliverablesText
@@ -552,7 +553,7 @@ export default function AdminPortal() {
               try {
                 const res = await fetch('/api/settings', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json', 'x-admin-key': 'Heng@1188' },
                   body: JSON.stringify(settings)
                 });
                 if (res.ok) alert('Settings saved successfully!');
@@ -618,7 +619,7 @@ export default function AdminPortal() {
               try {
                 const res = await fetch('/api/coupons', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json', 'x-admin-key': 'Heng@1188' },
                   body: JSON.stringify({ action: 'create', coupon: { code: newCouponCode, discountPercentage: newCouponDiscount }})
                 });
                 if (res.ok) {
@@ -651,7 +652,7 @@ export default function AdminPortal() {
                   <button onClick={async () => {
                     await fetch('/api/coupons', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
+                      headers: { 'Content-Type': 'application/json', 'x-admin-key': 'Heng@1188' },
                       body: JSON.stringify({ action: 'delete', coupon: c })
                     });
                     fetchAdminData();
@@ -680,7 +681,7 @@ export default function AdminPortal() {
               try {
                 const res = await fetch('/api/bot/broadcast', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json', 'x-admin-key': 'Heng@1188' },
                   body: JSON.stringify({ message: broadcastMessage })
                 });
                 const data = await res.json();
@@ -1114,7 +1115,7 @@ export default function AdminPortal() {
                   try {
                     const res = await fetch('/api/categories', {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
+                      headers: { 'Content-Type': 'application/json', 'x-admin-key': 'Heng@1188' },
                       body: JSON.stringify({ name: catName })
                     });
                     if (res.ok) {
@@ -1149,7 +1150,7 @@ export default function AdminPortal() {
                       try {
                          const res = await fetch('/api/categories', {
                            method: 'DELETE',
-                           headers: { 'Content-Type': 'application/json' },
+                           headers: { 'Content-Type': 'application/json', 'x-admin-key': 'Heng@1188' },
                            body: JSON.stringify({ name: cat })
                          });
                          if (res.ok) {
@@ -1304,7 +1305,7 @@ export default function AdminPortal() {
                           try {
                             const res = await fetch(`/api/orders/${order.id}`, {
                               method: 'PATCH',
-                              headers: { 'Content-Type': 'application/json' },
+                              headers: { 'Content-Type': 'application/json', 'x-admin-key': 'Heng@1188' },
                               body: JSON.stringify({
                                 status: 'Completed',
                                 deliverables: deliverable

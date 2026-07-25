@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCoupons, saveCoupons } from '@/lib/db';
+import { getCoupons, saveCoupons, verifyAdminRequest } from '@/lib/db';
 
 export async function GET() {
   try {
@@ -16,6 +16,9 @@ export async function POST(request: Request) {
     const { action, coupon } = data;
 
     if (action === 'create') {
+      if (!verifyAdminRequest(request)) {
+        return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 401 });
+      }
       const coupons = getCoupons();
       // Ensure unique ID and code
       const newCoupon = {
@@ -29,6 +32,9 @@ export async function POST(request: Request) {
     }
 
     if (action === 'delete') {
+      if (!verifyAdminRequest(request)) {
+        return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 401 });
+      }
       let coupons = getCoupons();
       coupons = coupons.filter(c => c.id !== coupon.id);
       saveCoupons(coupons);

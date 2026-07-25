@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCategories, saveCategories } from '@/lib/db';
+import { getCategories, saveCategories, verifyAdminRequest } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +14,10 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    if (!verifyAdminRequest(request)) {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 401 });
+    }
+
     const { name } = await request.json();
     if (!name || typeof name !== 'string') {
       return NextResponse.json({ error: 'Category name is required' }, { status: 400 });
@@ -40,6 +44,9 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    if (!verifyAdminRequest(request)) {
+      return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 401 });
+    }
     const { name } = await request.json();
     if (!name) {
       return NextResponse.json({ error: 'Category name is required to delete' }, { status: 400 });

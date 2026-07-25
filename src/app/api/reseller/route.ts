@@ -130,11 +130,17 @@ export async function POST(request: Request) {
 
     // Get current balance and details for the dashboard
     if (action === 'details') {
-      if (!email) return NextResponse.json({ success: false }, { status: 400 });
+      const { password } = body;
+      if (!email) return NextResponse.json({ success: false, message: 'Email is required' }, { status: 400 });
       const users = getUsers();
       const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (!user || user.role !== 'reseller') return NextResponse.json({ success: false }, { status: 404 });
+      if (!user || user.role !== 'reseller') return NextResponse.json({ success: false, message: 'Reseller account not found' }, { status: 404 });
       
+      // Verify password or apiKey before revealing credentials
+      if (user.passwordHash !== password && user.apiKey !== apiKey) {
+        return NextResponse.json({ success: false, message: 'Unauthorized access' }, { status: 401 });
+      }
+
       return NextResponse.json({ 
         success: true, 
         balance: user.balance, 

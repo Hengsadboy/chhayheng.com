@@ -1,20 +1,25 @@
 import { NextResponse } from 'next/server';
-import { getOrders, saveOrders, Order, getProducts, saveProducts } from '@/lib/db';
+import { getOrders, saveOrders, Order, getProducts, saveProducts, verifyAdminRequest } from '@/lib/db';
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get('email');
+    const isAdmin = verifyAdminRequest(request);
     const orders = getOrders();
 
+    if (isAdmin) {
+      return NextResponse.json(orders);
+    }
+
     if (email) {
-      // If email parameter is provided, filter for customer's specific orders
+      // Return specific customer orders
       const customerOrders = orders.filter(o => o.customerEmail.toLowerCase() === email.toLowerCase());
       return NextResponse.json(customerOrders);
     }
 
-    // Otherwise return all orders (Admin dashboard view)
-    return NextResponse.json(orders);
+    // Reject unauthenticated requests attempting to list all orders
+    return NextResponse.json({ error: 'Unauthorized: Email or Admin auth required' }, { status: 401 });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
   }
