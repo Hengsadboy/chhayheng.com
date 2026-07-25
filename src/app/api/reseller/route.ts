@@ -128,24 +128,70 @@ export async function POST(request: Request) {
       });
     }
 
-    // Get current balance and details for the dashboard
+    // Get current balance, orders, and sales analytics for the reseller dashboard
     if (action === 'details') {
       const { password } = body;
-      if (!email) return NextResponse.json({ success: false, message: 'Email is required' }, { status: 400 });
+      if (!email && !apiKey) return NextResponse.json({ success: false, message: 'Email or API Key is required' }, { status: 400 });
       const users = getUsers();
-      const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+      const user = users.find(u => 
+        (email && u.email.toLowerCase() === email.toLowerCase()) || 
+        (apiKey && u.apiKey === apiKey)
+      );
       if (!user || user.role !== 'reseller') return NextResponse.json({ success: false, message: 'Reseller account not found' }, { status: 404 });
       
       // Verify password or apiKey before revealing credentials
-      if (user.passwordHash !== password && user.apiKey !== apiKey) {
+      if (password && user.passwordHash !== password && user.apiKey !== apiKey) {
         return NextResponse.json({ success: false, message: 'Unauthorized access' }, { status: 401 });
       }
 
+      // Fetch reseller's orders
+      const allOrders = getOrders();
+      const resellerOrders = allOrders.filter(o => o.customerEmail.toLowerCase() === user.email.toLowerCase());
+
+      // Calculate weekly and monthly sales
+      const now = new Date();
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+      const weeklySales = resellerOrders
+        .filter(o => new Date(o.createdAt) >= oneWeekAgo)
+        .reduce((sum, o) => sum + o.price, 0);
+
+      const monthlySales = resellerOrders
+        .filter(o => new Date(o.createdAt) >= oneMonthAgo)
+        .reduce((sum, o) => sum + o.price, 0);
+
+      const totalSales = resellerOrders.reduce((sum, o) => sum + o.price, 0);
+
       return NextResponse.json({ 
         success: true, 
-        balance: user.balance, 
-        apiKey: user.apiKey 
+        balance: user.balance || 0, 
+        apiKey: user.apiKey,
+        orders: resellerOrders,
+        stats: {
+          totalOrders: resellerOrders.length,
+          totalSales: Number(totalSales.toFixed(2)),
+          weeklySales: Number(weeklySales.toFixed(2)),
+          monthlySales: Number(monthlySales.toFixed(2))
+        }
       });
+    }
+
+    // Get catalog of products with 20% wholesale discount
+    if (action === 'products') {
+      const products = getProducts();
+      const wholesaleProducts = products.map(p => ({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        retailPrice: p.price,
+        wholesalePrice: Number((p.price * 0.8).toFixed(2)),
+        category: p.category,
+        deliveryTime: p.deliveryTime,
+        stockCount: p.stockAccounts ? p.stockAccounts.length : 0,
+        image: p.image
+      }));
+      return NextResponse.json({ success: true, products: wholesaleProducts });
     }
 
     return NextResponse.json({ success: false, message: 'Invalid action' }, { status: 400 });

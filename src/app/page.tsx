@@ -136,9 +136,10 @@ export default function Home() {
     setQrCodeUrl('');
     setSecondsLeft(180);
 
+    const basePrice = session?.role === 'reseller' ? Number((selectedProduct.price * 0.8).toFixed(2)) : selectedProduct.price;
     const finalAmount = appliedCoupon 
-      ? (selectedProduct.price * (1 - appliedCoupon.discount / 100)).toFixed(2)
-      : selectedProduct.price.toFixed(2);
+      ? (basePrice * (1 - appliedCoupon.discount / 100)).toFixed(2)
+      : basePrice.toFixed(2);
 
     // 1. Animate sloshing tube setup progress
     const progressInterval = setInterval(() => {
@@ -606,7 +607,14 @@ export default function Home() {
                     <div className="flex md:flex-col items-center md:items-stretch justify-between md:justify-center gap-3 min-w-[130px] w-full md:w-auto">
                       {/* Price Badge */}
                       <div className="px-4 py-1.5 rounded-lg bg-slate-950/80 border border-[#1e1e38] text-center text-sm md:text-base font-black text-slate-100 flex-grow md:flex-grow-0">
-                        ${product.price}
+                        {session?.role === 'reseller' ? (
+                          <div className="flex flex-col items-center leading-tight">
+                            <span className="text-[10px] text-slate-500 line-through">${product.price}</span>
+                            <span className="text-amber-400 font-extrabold text-sm md:text-base">${(product.price * 0.8).toFixed(2)} <span className="text-[9px] bg-amber-950 text-amber-300 px-1 rounded ml-0.5">20% OFF</span></span>
+                          </div>
+                        ) : (
+                          <span>${product.price}</span>
+                        )}
                       </div>
 
                       {/* Animated Buy Button */}
@@ -681,7 +689,13 @@ export default function Home() {
                     <div className="text-xs font-semibold text-slate-500">Selected Service</div>
                     <div className="text-sm font-bold text-slate-100 mt-1">{selectedProduct.name}</div>
                     
-                    {appliedCoupon ? (
+                    {session?.role === 'reseller' ? (
+                      <div className="flex items-center space-x-2 mt-2">
+                        <span className="text-sm text-slate-500 line-through">${selectedProduct.price}</span>
+                        <span className="text-lg font-black text-amber-400">${appliedCoupon ? ((selectedProduct.price * 0.8) * (1 - appliedCoupon.discount / 100)).toFixed(2) : (selectedProduct.price * 0.8).toFixed(2)}</span>
+                        <span className="text-[10px] bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded border border-amber-500/30 ml-2">20% RESELLER OFF</span>
+                      </div>
+                    ) : appliedCoupon ? (
                       <div className="flex items-center space-x-2 mt-2">
                         <span className="text-sm text-slate-500 line-through">${selectedProduct.price}</span>
                         <span className="text-lg font-black text-neon-cyan">${(selectedProduct.price * (1 - appliedCoupon.discount / 100)).toFixed(2)}</span>

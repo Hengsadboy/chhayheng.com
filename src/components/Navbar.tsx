@@ -61,8 +61,8 @@ export default function Navbar() {
           <a href="/#services" className="text-sm font-medium text-slate-300 hover:text-neon-cyan transition-colors">
             Services
           </a>
-          <Link href="/customer" className="text-sm font-bold text-neon-purple hover:text-neon-pink transition-colors">
-            Become a Reseller
+          <Link href="/reseller" className="text-sm font-bold text-amber-400 hover:text-yellow-300 transition-colors flex items-center space-x-1">
+            <span>Reseller Portal</span>
           </Link>
           <a href="https://t.me/chhayhengs" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-slate-300 hover:text-[#0088cc] transition-colors flex items-center space-x-1">
             <span>Contact Support</span>
@@ -85,13 +85,18 @@ export default function Navbar() {
           {session ? (
             <div className="flex items-center space-x-2 md:space-x-4">
               <Link
-                href={session.role === 'admin' ? '/admin' : '/customer'}
+                href={session.role === 'admin' ? '/admin' : session.role === 'reseller' ? '/reseller' : '/customer'}
                 className="text-[10px] md:text-xs font-semibold py-1 md:py-1.5 px-2 md:px-3 rounded-md glassmorphism border border-[#1e1e38] text-slate-300 hover:text-neon-cyan hover:glow-cyan transition-all flex items-center space-x-1"
               >
                 {session.role === 'admin' ? (
                   <>
                     <Shield className="w-3 h-3 md:w-3.5 md:h-3.5 text-neon-purple hidden sm:block" />
                     <span>Admin</span>
+                  </>
+                ) : session.role === 'reseller' ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-amber-400 hidden sm:block animate-pulse" />
+                    <span className="text-amber-300 font-bold">Reseller Portal</span>
                   </>
                 ) : (
                   <>
