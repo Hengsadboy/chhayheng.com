@@ -15,6 +15,7 @@ interface Product {
   features: string[];
   deliveryTime: string;
   stockAccounts?: string[];
+  stockCount?: number;
   image?: string;
 }
 
@@ -530,7 +531,7 @@ export default function Home() {
         ) : (
           <div className="max-w-4xl mx-auto space-y-4 text-left">
             {filteredProducts.map((product, idx) => {
-              const stockCount = product.stockAccounts?.length || 0;
+              const stockCount = product.stockCount !== undefined ? product.stockCount : (product.stockAccounts?.length || 0);
               const isService = product.category.toLowerCase().includes('bot') || product.category.toLowerCase().includes('web') || product.category.toLowerCase().includes('software');
               const isDigital = !isService;
               const hasStock = !isDigital || stockCount > 0;

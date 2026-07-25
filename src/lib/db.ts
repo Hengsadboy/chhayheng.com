@@ -11,6 +11,7 @@ export interface Product {
   features: string[];
   deliveryTime: string;
   stockAccounts?: string[];
+  stockCount?: number;
   image?: string;
 }
 

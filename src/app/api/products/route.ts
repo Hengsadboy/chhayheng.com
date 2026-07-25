@@ -9,15 +9,19 @@ export async function GET(request: Request) {
     const isAdmin = verifyAdminRequest(request);
 
     if (isAdmin) {
-      return NextResponse.json(products);
+      const adminProducts = products.map(p => ({
+        ...p,
+        stockCount: p.stockAccounts ? p.stockAccounts.length : 0
+      }));
+      return NextResponse.json(adminProducts);
     }
 
-    // Sanitize product list for public users: remove stockAccounts credentials
+    // Sanitize product list for public users: remove stockAccounts credentials, but include stockCount
     const sanitizedProducts = products.map(p => {
       const { stockAccounts, ...rest } = p;
       return {
         ...rest,
-        // Only return count, never leak credentials
+        stockCount: stockAccounts ? stockAccounts.length : 0,
         stockAccounts: undefined
       };
     });
