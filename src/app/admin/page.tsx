@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ShieldAlert, Settings, Plus, Edit2, Trash2, ShoppingCart, 
   Layers, Package, Check, Save, X, Edit, HardDrive, RefreshCw,
-  TrendingUp, DollarSign, Activity, Briefcase, Users, MessageSquare, Sparkles, Wand2
+  TrendingUp, DollarSign, Activity, Briefcase, Users, MessageSquare, Sparkles, Wand2, Gift, Trophy, PartyPopper
 } from 'lucide-react';
 import NeoCard from '@/components/NeoCard';
 
@@ -124,8 +124,16 @@ export default function AdminPortal() {
     setIsGeneratingAi(false);
   };
 
+  // Giveaways State
+  const [adminGiveaways, setAdminGiveaways] = useState<any[]>([]);
+  const [gwTitle, setGwTitle] = useState('');
+  const [gwDesc, setGwDesc] = useState('');
+  const [gwPrize, setGwPrize] = useState('');
+  const [gwWinnerCount, setGwWinnerCount] = useState(1);
+  const [gwDurationHours, setGwDurationHours] = useState(24);
+
   // UI view state - Default to the new Salary/Revenue Analytics tab
-  const [activeTab, setActiveTab] = useState<'analytics' | 'products' | 'orders' | 'users' | 'settings' | 'coupons' | 'broadcast'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'products' | 'orders' | 'users' | 'giveaways' | 'settings' | 'coupons' | 'broadcast'>('analytics');
 
   useEffect(() => {
     const stored = localStorage.getItem('user_session');
@@ -164,12 +172,13 @@ export default function AdminPortal() {
   const fetchAdminData = async () => {
     try {
       const adminKey = getAdminKey();
-      const [prodRes, ordRes, setRes, coupRes, userRes] = await Promise.all([
+      const [prodRes, ordRes, setRes, coupRes, userRes, gwRes] = await Promise.all([
         fetch('/api/products', { headers: { 'x-admin-key': adminKey } }),
         fetch('/api/orders', { headers: { 'x-admin-key': adminKey } }),
         fetch('/api/settings', { headers: { 'x-admin-key': adminKey } }),
         fetch('/api/coupons', { headers: { 'x-admin-key': adminKey } }),
-        fetch('/api/users', { headers: { 'x-admin-key': adminKey } })
+        fetch('/api/users', { headers: { 'x-admin-key': adminKey } }),
+        fetch('/api/giveaway', { headers: { 'x-admin-key': adminKey } })
       ]);
       
       if (prodRes.ok) setProducts(await prodRes.json());
@@ -182,6 +191,10 @@ export default function AdminPortal() {
           setWebsiteUsers(uData.websiteUsers || []);
           setTgUsers(uData.tgUsers || []);
         }
+      }
+      if (gwRes.ok) {
+        const gData = await gwRes.json();
+        if (gData.success) setAdminGiveaways(gData.giveaways || []);
       }
       fetchCategories();
     } catch (err) {
@@ -449,6 +462,13 @@ export default function AdminPortal() {
         >
           <Users className="w-4 h-4" />
           <span>Users ({websiteUsers.length + tgUsers.length})</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('giveaways')}
+          className={`flex items-center space-x-2 px-5 py-2.5 rounded-lg text-xs font-bold transition-all border ${activeTab === 'giveaways' ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 border-none glow-cyan' : 'bg-slate-900 border-[#1e1e38] text-slate-400 hover:text-slate-200'}`}
+        >
+          <Gift className="w-4 h-4" />
+          <span>Giveaways ({adminGiveaways.length})</span>
         </button>
         <button
           onClick={() => setActiveTab('settings')}
@@ -728,6 +748,188 @@ export default function AdminPortal() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </NeoCard>
+        </div>
+      )}
+
+      {activeTab === 'giveaways' && (
+        <div className="space-y-8">
+          <NeoCard glowColor="purple" className="p-6">
+            <h2 className="text-xl font-bold text-slate-100 mb-6 flex items-center space-x-2">
+              <Gift className="text-amber-400 w-5 h-5" />
+              <span>Create New Promotional Giveaway</span>
+            </h2>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (!gwTitle || !gwPrize) {
+                alert('Title and Prize are required!');
+                return;
+              }
+              try {
+                const res = await fetch('/api/giveaway', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'x-admin-key': getAdminKey() },
+                  body: JSON.stringify({
+                    action: 'create',
+                    title: gwTitle,
+                    description: gwDesc,
+                    prize: gwPrize,
+                    winnerCount: gwWinnerCount,
+                    durationHours: gwDurationHours
+                  })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                  alert('Giveaway created successfully!');
+                  setGwTitle('');
+                  setGwDesc('');
+                  setGwPrize('');
+                  fetchAdminData();
+                } else {
+                  alert(data.message || data.error || 'Failed to create giveaway.');
+                }
+              } catch (err) {
+                alert('Connection error.');
+              }
+            }} className="space-y-4 max-w-2xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Giveaway Title</label>
+                  <input
+                    type="text"
+                    required
+                    value={gwTitle}
+                    onChange={e => setGwTitle(e.target.value)}
+                    placeholder="e.g. Free YouTube Premium 1-Year"
+                    className="w-full bg-slate-950 border border-[#1e1e38] rounded-md px-3.5 py-2 text-xs text-slate-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Prize Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={gwPrize}
+                    onChange={e => setGwPrize(e.target.value)}
+                    placeholder="e.g. 1x YouTube Premium Account"
+                    className="w-full bg-slate-950 border border-[#1e1e38] rounded-md px-3.5 py-2 text-xs text-slate-200"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1">Description & Rules</label>
+                <textarea
+                  rows={2}
+                  value={gwDesc}
+                  onChange={e => setGwDesc(e.target.value)}
+                  placeholder="e.g. Click Enter to join! Winner will be picked automatically in 24 hours."
+                  className="w-full bg-slate-950 border border-[#1e1e38] rounded-md px-3.5 py-2 text-xs text-slate-200"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Number of Winners</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={gwWinnerCount}
+                    onChange={e => setGwWinnerCount(parseInt(e.target.value) || 1)}
+                    className="w-full bg-slate-950 border border-[#1e1e38] rounded-md px-3.5 py-2 text-xs text-slate-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1">Duration (Hours)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={gwDurationHours}
+                    onChange={e => setGwDurationHours(parseInt(e.target.value) || 24)}
+                    className="w-full bg-slate-950 border border-[#1e1e38] rounded-md px-3.5 py-2 text-xs text-slate-200"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 font-black text-xs uppercase tracking-wider rounded-lg shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:scale-[1.01] transition-all"
+              >
+                + Publish Giveaway
+              </button>
+            </form>
+          </NeoCard>
+
+          {/* Manage Active & Past Giveaways */}
+          <NeoCard glowColor="cyan" className="p-6">
+            <h2 className="text-xl font-bold text-slate-100 mb-6 flex items-center space-x-2">
+              <Trophy className="text-neon-cyan w-5 h-5" />
+              <span>All Giveaways ({adminGiveaways.length})</span>
+            </h2>
+
+            <div className="space-y-4">
+              {adminGiveaways.map((gw) => (
+                <div key={gw.id} className="p-4 bg-slate-950 border border-[#1e1e38] rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${gw.status === 'active' ? 'bg-amber-950 text-amber-300' : 'bg-slate-800 text-slate-400'}`}>
+                        {gw.status.toUpperCase()}
+                      </span>
+                      <h3 className="text-sm font-bold text-slate-100">{gw.title}</h3>
+                    </div>
+                    <div className="text-xs text-slate-400 mt-1">Prize: <strong className="text-slate-200">{gw.prize}</strong> | Entries: <strong className="text-amber-400">{gw.entries?.length || 0}</strong></div>
+                    {gw.winners && gw.winners.length > 0 && (
+                      <div className="text-xs text-emerald-400 font-bold mt-1">🎉 Winner(s): {gw.winners.join(', ')}</div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    {gw.status === 'active' && (
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`Draw random winner(s) for "${gw.title}" now?`)) return;
+                          const res = await fetch('/api/giveaway', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'x-admin-key': getAdminKey() },
+                            body: JSON.stringify({ action: 'draw', giveawayId: gw.id })
+                          });
+                          const data = await res.json();
+                          if (res.ok && data.success) {
+                            alert(`Winner(s) selected: ${data.winners.join(', ')}`);
+                            fetchAdminData();
+                          } else {
+                            alert(data.message || 'Failed to draw winners.');
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-xs rounded hover:glow-cyan transition-all"
+                      >
+                        🎲 Pick Winner(s)
+                      </button>
+                    )}
+
+                    <button
+                      onClick={async () => {
+                        if (!confirm('Are you sure you want to delete this giveaway?')) return;
+                        const res = await fetch('/api/giveaway', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json', 'x-admin-key': getAdminKey() },
+                          body: JSON.stringify({ action: 'delete', giveawayId: gw.id })
+                        });
+                        if (res.ok) fetchAdminData();
+                      }}
+                      className="px-3 py-1.5 bg-rose-950/60 text-rose-400 border border-rose-900/50 font-bold text-xs rounded hover:bg-rose-900/50 transition-all"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {adminGiveaways.length === 0 && (
+                <div className="text-center py-6 text-slate-500 text-xs">No giveaways created yet.</div>
+              )}
             </div>
           </NeoCard>
         </div>

@@ -56,8 +56,20 @@ export interface Coupon {
 export interface Verification {
   email: string;
   code: string;
-  type: 'signup' | 'reset';
-  expiresAt: string;
+  expiresAt: number;
+}
+
+export interface Giveaway {
+  id: string;
+  title: string;
+  description: string;
+  prize: string;
+  winnerCount: number;
+  endTime: string;
+  status: 'active' | 'ended';
+  entries: string[];
+  winners?: string[];
+  createdAt: string;
 }
 
 const DB_DIR = path.join(process.cwd(), 'data');
@@ -68,6 +80,7 @@ const CATEGORIES_FILE = path.join(DB_DIR, 'categories.json');
 const SETTINGS_FILE = path.join(DB_DIR, 'settings.json');
 const COUPONS_FILE = path.join(DB_DIR, 'coupons.json');
 const VERIFICATIONS_FILE = path.join(DB_DIR, 'verifications.json');
+const GIVEAWAYS_FILE = path.join(DB_DIR, 'giveaways.json');
 
 // Ensure database files exist
 function initDB() {
@@ -210,6 +223,10 @@ function initDB() {
   if (!fs.existsSync(VERIFICATIONS_FILE)) {
     fs.writeFileSync(VERIFICATIONS_FILE, JSON.stringify([], null, 2), 'utf-8');
   }
+
+  if (!fs.existsSync(GIVEAWAYS_FILE)) {
+    fs.writeFileSync(GIVEAWAYS_FILE, JSON.stringify([], null, 2), 'utf-8');
+  }
 }
 
 // In-memory cache to optimize CPU/disk I/O on 1GB VPS
@@ -221,6 +238,7 @@ let dbCache: {
   orders?: Order[];
   coupons?: Coupon[];
   verifications?: Verification[];
+  giveaways?: Giveaway[];
 } = {};
 
 // Read & Write Helpers
@@ -320,6 +338,20 @@ export function saveVerifications(verifications: Verification[]): void {
   initDB();
   dbCache.verifications = verifications;
   fs.writeFileSync(VERIFICATIONS_FILE, JSON.stringify(verifications, null, 2), 'utf-8');
+}
+
+export function getGiveaways(): Giveaway[] {
+  if (dbCache.giveaways) return dbCache.giveaways;
+  initDB();
+  const data = fs.readFileSync(GIVEAWAYS_FILE, 'utf-8');
+  dbCache.giveaways = JSON.parse(data);
+  return dbCache.giveaways!;
+}
+
+export function saveGiveaways(giveaways: Giveaway[]): void {
+  initDB();
+  dbCache.giveaways = giveaways;
+  fs.writeFileSync(GIVEAWAYS_FILE, JSON.stringify(giveaways, null, 2), 'utf-8');
 }
 
 // Authentication Config

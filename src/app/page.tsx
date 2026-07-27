@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, MessageSquare, Terminal, Globe, Cpu, Check, ShoppingCart, ArrowRight, X, Gift, Sparkles, Loader2, RefreshCw, Search, WifiOff, AlertTriangle } from 'lucide-react';
+import { Bot, MessageSquare, Terminal, Globe, Cpu, Check, ShoppingCart, ArrowRight, X, Gift, Sparkles, Loader2, RefreshCw, Search, WifiOff, AlertTriangle, Trophy, Clock, PartyPopper } from 'lucide-react';
 import NeoCard from '@/components/NeoCard';
 import InfiniteMarquee from '@/components/InfiniteMarquee';
 
@@ -38,6 +38,10 @@ export default function Home() {
   const [appliedCoupon, setAppliedCoupon] = useState<{code: string, discount: number} | null>(null);
   const [couponError, setCouponError] = useState('');
 
+  // Giveaway State
+  const [giveaways, setGiveaways] = useState<any[]>([]);
+  const [enteringGwId, setEnteringGwId] = useState<string | null>(null);
+
   // Real KHQR Payment State
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [paymentStatusText, setPaymentStatusText] = useState('');
@@ -72,13 +76,15 @@ export default function Home() {
       setIsOffline(true);
     }
 
-    // Parallel fetch products & categories for instant mobile loading
+    // Parallel fetch products, categories & giveaways for instant mobile loading
     Promise.all([
       fetch('/api/products').then(res => res.json()),
-      fetch('/api/categories').then(res => res.json())
-    ]).then(([prodData, catData]) => {
+      fetch('/api/categories').then(res => res.json()),
+      fetch('/api/giveaway').then(res => res.json())
+    ]).then(([prodData, catData, gwData]) => {
       if (Array.isArray(prodData)) setProducts(prodData);
       if (Array.isArray(catData)) setCategories(['All', ...catData]);
+      if (gwData && gwData.success) setGiveaways(gwData.giveaways || []);
       setLoading(false);
     }).catch(err => {
       console.error(err);
@@ -477,6 +483,76 @@ export default function Home() {
           <InfiniteMarquee />
         </div>
       </section>
+
+      {/* Active Giveaways Section */}
+      {giveaways.length > 0 && (
+        <section className="max-w-7xl mx-auto px-6 py-6">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 text-amber-400 text-xs font-black tracking-wide mb-2 glow-cyan">
+              <PartyPopper className="w-3.5 h-3.5" />
+              <span>SPECIAL COMMUNITY GIVEAWAYS</span>
+            </div>
+            <h2 className="text-2xl md:text-3xl font-black text-slate-100">
+              Enter to Win <span className="text-gradient-cyan-purple">Free Prizes</span>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {giveaways.map((gw) => {
+              const isEnded = gw.status === 'ended' || new Date(gw.endTime) <= new Date();
+              const hasEntered = session?.email && Array.isArray(gw.entries) && gw.entries.some((e: string) => e.toLowerCase() === session.email.toLowerCase());
+
+              return (
+                <NeoCard key={gw.id} glowColor="purple" className="p-6 relative overflow-hidden">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${isEnded ? 'bg-slate-800 text-slate-400' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}`}>
+                        {isEnded ? 'ENDED' : '🎉 LIVE GIVEAWAY'}
+                      </span>
+                      <h3 className="text-lg font-bold text-slate-100 mt-2">{gw.title}</h3>
+                      <p className="text-xs text-slate-400 mt-1">{gw.description}</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-400 text-slate-950 font-black flex items-center justify-center flex-shrink-0 shadow-[0_0_20px_rgba(245,158,11,0.3)]">
+                      <Gift className="w-6 h-6" />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-[#1e1e38] flex items-center justify-between">
+                    <div className="space-y-1 text-xs">
+                      <div className="text-slate-400 flex items-center space-x-1">
+                        <Trophy className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Prize: <strong className="text-slate-100">{gw.prize}</strong> ({gw.winnerCount} Winner{gw.winnerCount > 1 ? 's' : ''})</span>
+                      </div>
+                      <div className="text-slate-400 flex items-center space-x-1">
+                        <Clock className="w-3.5 h-3.5 text-neon-cyan" />
+                        <span>{isEnded ? 'Ended' : `Ends: ${new Date(gw.endTime).toLocaleDateString()}`}</span>
+                      </div>
+                    </div>
+
+                    {!isEnded ? (
+                      <button
+                        onClick={() => handleEnterGiveaway(gw.id)}
+                        disabled={enteringGwId === gw.id || hasEntered}
+                        className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${
+                          hasEntered 
+                            ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 cursor-default'
+                            : 'bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)]'
+                        }`}
+                      >
+                        {hasEntered ? '✓ Entered!' : enteringGwId === gw.id ? 'Entering...' : '🎉 Enter Giveaway'}
+                      </button>
+                    ) : (
+                      <div className="text-xs font-bold text-amber-400">
+                        {gw.winners && gw.winners.length > 0 ? `Winner: ${gw.winners.join(', ')}` : 'Winners Announced!'}
+                      </div>
+                    )}
+                  </div>
+                </NeoCard>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Services Section */}
       <section id="services" className="max-w-7xl mx-auto px-6 pt-2 pb-20">
