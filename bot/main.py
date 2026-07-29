@@ -81,7 +81,7 @@ def deduct_user_balance(user_id, amount):
         return True
     return False
 
-def add_user_order(user_id, product_name, price, deliverable, is_service):
+def add_user_order(user_id, product_name, price, deliverable, is_service, requirements=None, product_id=None):
     users = get_tg_users()
     uid_str = str(user_id)
     if uid_str not in users:
@@ -97,11 +97,39 @@ def add_user_order(user_id, product_name, price, deliverable, is_service):
         "price": price,
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "deliverable": deliverable,
-        "is_service": is_service
+        "is_service": is_service,
+        "requirements": requirements
     }
     
     users[uid_str]["orders"].append(order)
     save_tg_users(users)
+
+    # Sync order to data/orders.json for Admin Panel visibility
+    try:
+        orders_file = os.path.join(DB_DIR, 'orders.json')
+        orders_list = []
+        if os.path.exists(orders_file):
+            with open(orders_file, 'r', encoding='utf-8') as f:
+                orders_list = json.load(f)
+        
+        main_order = {
+            "id": order_id,
+            "customerEmail": f"Telegram: {user_id}",
+            "productId": product_id or "tg",
+            "productName": product_name,
+            "price": price,
+            "status": "Completed" if deliverable else "Pending",
+            "createdAt": datetime.now().isoformat(),
+            "updatedAt": datetime.now().isoformat(),
+            "deliverables": deliverable,
+            "requirements": requirements
+        }
+        orders_list.insert(0, main_order)
+        with open(orders_file, 'w', encoding='utf-8') as f:
+            json.dump(orders_list, f, indent=2)
+    except Exception as e:
+        print(f"Failed to sync orders.json: {e}")
+
     return order_id
 
 def get_user_orders(user_id):
@@ -338,6 +366,41 @@ def generate_qr_photo(qr_string):
     bio.seek(0)
     return bio
 
+user_custom_inputs = {}
+
+def process_user_custom_input(message, product_id, original_msg_id):
+    chat_id = message.chat.id
+    user_id = message.from_user.id
+    
+    try: bot.delete_message(chat_id, message.message_id)
+    except: pass
+
+    if message.text and message.text.lower() == '/cancel':
+        products = get_products()
+        product = next((p for p in products if p['id'] == product_id), None)
+        if product:
+            bot.edit_message_text(f"❌ Purchase cancelled.", chat_id, original_msg_id, parse_mode='Markdown')
+        return
+
+    custom_val = message.text.strip() if message.text else ""
+    if not custom_val:
+        bot.edit_message_text("❌ Input cannot be empty. Please type your details or /cancel.", chat_id, original_msg_id, parse_mode='Markdown')
+        bot.register_next_step_handler_by_chat_id(chat_id, process_user_custom_input, product_id, original_msg_id)
+        return
+
+    if user_id not in user_custom_inputs:
+        user_custom_inputs[user_id] = {}
+    user_custom_inputs[user_id][product_id] = custom_val
+
+    # Re-trigger handle_buy_now with artificial call object
+    call = type('obj', (object,), {
+        'id': '0',
+        'data': f"buy_{product_id}",
+        'from_user': message.from_user,
+        'message': type('msg', (object,), {'chat': type('chat', (object,), {'id': chat_id}), 'message_id': original_msg_id})()
+    })()
+    handle_buy_now(call)
+
 def handle_successful_delivery(product_id, user_id, sent_msg=None, method="Balance"):
     products = get_products()
     product = next((p for p in products if p['id'] == product_id), None)
@@ -345,6 +408,9 @@ def handle_successful_delivery(product_id, user_id, sent_msg=None, method="Balan
         
     is_service = any(k in product.get('category', '').lower() for k in ['bot', 'web', 'software'])
     
+    # Retrieve user custom input if required
+    requirements = user_custom_inputs.get(user_id, {}).get(product_id)
+
     stock_account = None
     if not is_service:
         fresh_products = get_products()
@@ -358,8 +424,12 @@ def handle_successful_delivery(product_id, user_id, sent_msg=None, method="Balan
                 except Exception: pass
             return False
 
-    # Save to user's orders history
-    add_user_order(user_id, product['name'], product['price'], stock_account, is_service)
+    # Save to user's orders history and sync with orders.json
+    add_user_order(user_id, product['name'], product['price'], stock_account, is_service, requirements=requirements, product_id=product_id)
+
+    # Clean up custom input buffer
+    if user_id in user_custom_inputs:
+        user_custom_inputs[user_id].pop(product_id, None)
 
     if sent_msg:
         try: bot.delete_message(sent_msg.chat.id, sent_msg.message_id)
@@ -367,6 +437,8 @@ def handle_successful_delivery(product_id, user_id, sent_msg=None, method="Balan
         
     try:
         user_msg = f"✅ **Payment Verified!**\n🎉 **Vault Unlocked!**\n\nThank you for purchasing **{product['name']}**!\n\n"
+        if requirements:
+            user_msg += f"📝 **Your Detail Received:** `{requirements}`\n\n"
         if is_service:
             user_msg += "Your payment is confirmed. Our team will contact you shortly to begin processing your service requirements."
         else:
@@ -383,6 +455,8 @@ def handle_successful_delivery(product_id, user_id, sent_msg=None, method="Balan
     if group_id:
         try:
             admin_msg = f"💰 **New Paid Sale!**\n\n👤 **User ID:** {user_id}\n🛒 **Product:** {product['name']}\n💵 **Paid:** ${product['price']}\n✅ **Method:** {method}"
+            if requirements:
+                admin_msg += f"\n📝 **Input/Email:** `{requirements}`"
             bot.send_message(group_id, admin_msg, parse_mode='Markdown')
         except Exception:
             pass
@@ -426,12 +500,32 @@ def handle_buy_now(call):
     products = get_products()
     product = next((p for p in products if p['id'] == product_id), None)
     if not product:
-        bot.answer_callback_query(call.id, "Product not found.")
+        try: bot.answer_callback_query(call.id, "Product not found.")
+        except: pass
         return
         
+    user_id = call.from_user.id
+    user_input = user_custom_inputs.get(user_id, {}).get(product_id)
+
+    # Check if product requires custom input (email/family invite details)
+    if product.get('requiresInput') and not user_input:
+        label = product.get('inputLabel') or "Email / Account details"
+        placeholder = product.get('inputPlaceholder') or "yourname@email.com"
+        
+        prompt_text = f"📝 **Input Required for {product['name']}**\n\n"
+        prompt_text += f"Please type your **{label}** below in chat:\n"
+        prompt_text += f"*(Example: `{placeholder}`)*\n\n"
+        prompt_text += "Or type `/cancel` to abort."
+        
+        bot.edit_message_text(prompt_text, call.message.chat.id, call.message.message_id, parse_mode='Markdown')
+        bot.register_next_step_handler_by_chat_id(call.message.chat.id, process_user_custom_input, product_id, call.message.message_id)
+        return
+
     user_bal = get_user_balance(call.from_user.id)
     
     caption = f"💳 **Checkout: {product['name']}**\n\n"
+    if user_input:
+        caption += f"📝 **Your Provided Info:** `{user_input}`\n\n"
     caption += f"**Total to Pay:** ${product['price']}\n"
     caption += f"**Your Balance:** ${user_bal:.2f}\n\n"
     caption += "How would you like to pay?"
