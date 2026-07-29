@@ -1,19 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import AmbientAudio from "@/components/AmbientAudio";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Chhayheng.online | Premium Software & Bot Shop",
@@ -34,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark scroll-smooth" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-[#04040d] text-slate-100 flex flex-col antialiased`} suppressHydrationWarning>
+      <body className="min-h-screen bg-[#04040d] text-slate-100 flex flex-col antialiased" suppressHydrationWarning>
         <AnimatedBackground />
         <AmbientAudio />
         {/* Anti-copy protection removed by user request */}
